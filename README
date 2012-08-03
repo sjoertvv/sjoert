@@ -1,0 +1,28 @@
+Collection of tools that I'm gathering/writing while doing astronomy/astrophysics
+research with Python. For example,
+
+ -- Create, merge, append with numpy.recarrays 
+ -- Make latex tables from (record) arrays
+ -- Convert magnitude to luminosity (oh yeah!)
+ -- I/O for fits/ascii tables  
+
+
+Requirements: 
+
+ - matplotlib
+ - numpy
+ - pywcs - http://www.astropy.org/
+ - pyfits - http://www.stsci.edu/institute/software_hardware/pyfits/Download
+
+Optional:
+
+ - APLpy  - http://aplpy.github.com/
+ - k3match - pschella.github.com/k3match
+ - CosmoloPy - roban.github.com/CosmoloPy
+
+
+To use, at your own risk, place folder in your $PYTHONPATH and simply do 
+
+import sjoert
+
+
