@@ -45,7 +45,7 @@ cm2Mpc = 1/(parsec_in_cm *1e6)
 deg2rad = np.pi/180.
 rad2deg = 180. / np.pi
 rad2ac = rad2deg/3600.
-
+sqdegonsky = 129600. /np.pi
 
 too_small_rad = .1/3600. #,deg, delow this ang_sep can fail and we use Pythagoras
 
@@ -359,6 +359,15 @@ def abs2lum(M, nu=None, band=None):
         nu = _get_nu(band)
     log_lum =(-0.4*M) + np.log10(3631.)-23 + np.log10(4*np.pi) + 2*np.log10(3e19) + np.log10(nu)
     return 10**log_lum
+
+def flux2mag(flux):
+    '''
+    >> AB_mag = flux2mag(flux) # flux in Jy
+    '''
+    return -2.5*np.log10(flux*1e-23) - 48.6
+
+#def mag2flux(mag):
+
 
 def mag2lum(M, z, nu=None, band=None,
                       h=.72, omega_m_0=.3, omega_l_0=.7):
