@@ -1,4 +1,9 @@
-"""Sjoert's private tools."""
+"""
+Collection of tools that I'm gathering/writing while doing astronomy/astrophysics
+research with Python.
+
+2010-2012, Sjoert van Velzen
+"""
 
 import io
 import rec

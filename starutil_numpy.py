@@ -1,7 +1,7 @@
 ''' 
-code of pysherematch.starutil_numpy which is part of the astrometry.net, by Dustin Lang et al.
+code of pysherematch.starutil_numpy which is part of astrometry.net, by Dustin Lang et al.
 copied on 2012 Aug from Trac (Revision 20025, 12/13/11 )
-(I only use this code for its coordindate conferention tools)
+(I only use this code for its coordindate conversion tools)
 '''
  
 from numpy import *

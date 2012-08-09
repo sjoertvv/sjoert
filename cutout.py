@@ -1,5 +1,6 @@
 '''
-
+get subimage from fits image
+wcs info in header is update
 '''
 
 import numpy as np
@@ -47,7 +48,8 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
         hdu = pyfits.open(filename)[0]
     elif type(hdu) == pyfits.core.HDUList:
         hdu = hdu[0]
-    elif type(pyfits.core.PrimaryHDU) != pyfits.core.PrimaryHDU:
+    elif type(hdu) != pyfits.core.PrimaryHDU:
+        print 'type(hdu:)', type(hdu)
         print 'ERROR: type(hdu) needs to be <pyfits.core.HDUList> or pyfits.core.PrimaryHDU'
         return
 
@@ -72,10 +74,15 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
     # slice the image
     print 'center in pixel coordinates', pcenter
 
+    # use true sky location (creates non-square images)
     #delta_ax1 = (np.abs(wcs.wcs_sky2pix([ [center[0]-im_size, center[1]] ], 1) - pcenter)/2.)[0][0]
     #delta_ax2 = (np.abs(wcs.wcs_sky2pix([ [center[0], center[1]-im_size] ], 1) - pcenter)/2.)[0][1]
     #delta = [delta_ax1, delta_ax2]
-    delta = np.abs(wcs.wcs_sky2pix( [center-im_size], 1)[0] - pcenter)/2.
+    #delta=  np.abs(wcs.wcs_sky2pix( [center-im_size], 1)[0] - pcenter)/2.
+
+    # use pixel scale to define boundaries
+    delta = np.abs(0.5*im_size / np.array([hdu.header['CDELT1'], hdu.header['CDELT2']]))
+
     ax1l = pcenter[0]-delta[0]
     ax1u=pcenter[0]+delta[0]
     ax2l = pcenter[1]-delta[1]
@@ -103,7 +110,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
         for srm in srem: outname=outname.split(srm)[0]
         if filename =='':
             print 'warning, not filename given pdf or fits file, using IAU name'
-            filename = iau_name(center[0], center[1])
+            outname = iau_name(center[0], center[1])
         print 'base for output file:', outname
             
 

@@ -43,17 +43,26 @@ def readascii(filename='', names='',formats='', comment='#',
     ncols = len(sline)
     f.close() 
     if not silent: print 'first line of data:', str(sline)
-    if not silent: print 'number of colums', ncols
+    if not silent: print 'number of colums:', ncols
 
-    #Try to get col names from header
-    com_lines.reverse()
-    for cl in com_lines:
-        scl = cl.strip(comment).split()        
-        if  ((names == '') & (len(scl) == ncols) &
-             (cl.split()[0][0] == comment) ):
-            names = scl
-            #print 'using col names from header:', names
-    
+    #Try to get col names from header 
+    if (names == '') and (len(com_lines)>1):
+        com_lines.reverse()
+        for cl in com_lines[1:]:
+            scl = cl.strip(comment).split()
+            if delimiter:
+                scl_del = cl.strip(comment).split(delimiter)
+            else:
+                scl_del = scl
+            if  (len(scl) == ncols): # & (cl.split()[0][0] == comment) ):
+                names = scl
+                if not silent: print 'using col names from header:', names
+                break
+            if (len(scl_del) == ncols):
+                names = scl_del
+                if not silent: print 'using col names from header:', names
+                break
+            
     if len(names) != ncols:
         #print 'making columns with default names'
         names= [] 
