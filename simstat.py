@@ -130,6 +130,7 @@ def his2scat(arr, bins=10, range=None, conv=0.8413):
     >> xx, yy, yy_err = his2scat(arr, bins=10, range=None, conv=0.8413)
 
     output is: the mid of the bins, the normalized value, the uncertainty for conv interval
+    (normalization is such that integration over the bins yields the length of the array)
     
     note, negative bins are ignored
     todo: return upper limits for conv
@@ -152,8 +153,8 @@ def his2scat(arr, bins=10, range=None, conv=0.8413):
         print 'warning we have empty bins! skipping these'
 
     for i, ip in enumerate(ipos):
-        xx[i] = (hh[1][ipos[i]]+hh[1][ipos[i]+1])/2.
-        bin_width =  hh[1][ipos[i]+1]-hh[1][ipos[i]]
+        xx[i] = (hh[1][ip]+hh[1][ip+1])/2.
+        bin_width =  hh[1][ip+1]-hh[1][ip]
         yy[i] = hh[0][ip] / bin_width
         plim = poisson_limits( hh[0][ip], conv)
         yy_err[:,i] =  abs(plim - hh[0][ip]) / bin_width

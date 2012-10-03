@@ -102,17 +102,6 @@ def print_end(filename,nosticks=False,**kwargs):
     else:
         plt.savefig(filename)
 
-    format=filename.split('.')[-1]
-
-    if format=='ps':
-         base=filename.split('.ps')[0]
-         print 'converting',filename, 'to ', base+'.pdf'
-         os.system('ps2pdf '+filename+' '+base+'.pdf')
-         
-    if format=='eps':
-         base=filename.split('.eps')[0]
-         print 'converting',filename, 'to ', base+'.eps'
-         os.system('epspdf '+filename+' '+base+'.eps')
              
 
 def _add_ticks():

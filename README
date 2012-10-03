@@ -17,12 +17,13 @@ Requirements:
 Optional:
 
  - APLpy  - http://aplpy.github.com/
- - k3match - pschella.github.com/k3match
- - CosmoloPy - roban.github.com/CosmoloPy
+ - k3match - http://pschella.github.com/k3match
+ - CosmoloPy - http://roban.github.com/CosmoloPy
 
 
 To use, at your own risk, place folder in your $PYTHONPATH and simply do 
 
 import sjoert
+
 
 

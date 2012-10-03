@@ -15,7 +15,7 @@ print 'time for starutil', time.time() - time0
 
 
 time0 = time.time()
-sj_dist = sjoert.stellar.ang_sep(ra1, dec1, ra2[0:2], dec2[0:2])
+sj_dist = sjoert.stellar.ang_sep(ra1, dec1, ra2[0], dec2[0])
 print 'time for ang_sep', time.time() - time0
 
 delta = su_dist-sj_dist

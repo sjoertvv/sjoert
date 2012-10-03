@@ -8,7 +8,7 @@ import pyfits
 import numpy as np
 import pickle
 
-def readascii(filename='', names='',formats='', comment='#',
+def readascii(filename='', names='', comment='#',
               delimiter='', write_pickle=False, silent=False):
     '''
     read asciitable, return record array
@@ -20,15 +20,14 @@ def readascii(filename='', names='',formats='', comment='#',
 
     optinal keywords:
      names: names of cols (optional)
-     format: format of cols (optional)
      write_pickple: name of the pickle, if True we write filename+.pickple
     '''
     
     try:         
         f = open(filename, 'r')
-    except IOErorr:
-        print 'please give filename'
-        return None
+    except IOError:
+        print 'file not found'
+        raise(IOError)
     
     # read through header, find number of columns
     com_lines = []
@@ -68,17 +67,12 @@ def readascii(filename='', names='',formats='', comment='#',
         names= [] 
         for i in range(ncols):
             names.append('field-'+np.str(i))
-            
-
-    # Make the dict for loadtxt
-    dtype = {'names':tuple(names), 'formats':tuple(formats)}
-    if not silent:  print 'dtype:', dtype
 
     # Read file, using loadtxt or recfromtxt
     dd = np.recfromtxt(filename, delimiter=delimiter, names=names)
     # notes:
     # recform finds formats automatically, 
-    # while, genfromtxt and loadtxt do not
+    # while genfromtxt and loadtxt do not
 
     # Make a pickle
     if write_pickle:
@@ -111,25 +105,28 @@ def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
     cols = tbdata.dtype
     hdulist.close()
 
+    
     # give a better name to Vizier output
+    rec_names = np.array(cols.names)
     if vizmod:
         for i,cc in enumerate(cols.names):
-            if cc == '_RAJ2000': cols.names[i] = 'ra'
-            if cc == '_DEJ2000': cols.names[i] = 'dec'
+            if cc == '_RAJ2000': rec_names[i] = 'ra'
+            if cc == '_DEJ2000': rec_names[i] = 'dec'
 
     pre_dtype = []
-    for coln in cols.names:
+    for i, coln in enumerate(cols.names):
         col_data  = np.asarray(tbdata.field(coln))
-        pre_dtype += [(coln, col_data.dtype)]
+        pre_dtype += [(rec_names[i], col_data.dtype)]
 
     dd = np.empty(len(tbdata.field(0)), dtype=np.dtype(pre_dtype))
-    for coln in cols.names: 
+    
+    for i, coln in enumerate(cols.names): 
         if not(silent): print coln        
         coldata = tbdata.field(coln).copy()
         if verbose:
             print coldata
             print dd[coln].dtype
-        dd[coln] = coldata
+        dd[rec_names[i]] = coldata
 
     return dd
 

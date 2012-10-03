@@ -49,7 +49,7 @@ sqdegonsky = 129600. /np.pi
 
 too_small_rad = .1/3600. #,deg, delow this ang_sep can fail and we use Pythagoras
 
-def ang_sep(ra1, dec1, ra2, dec2, verbose=False):
+def ang_sep(ra1, dec1, ra2, dec2):
     '''
     >> dist = ang_sep(ra1, dec1, ra2, dec2)
 
@@ -57,41 +57,30 @@ def ang_sep(ra1, dec1, ra2, dec2, verbose=False):
     input can be:
      - two equal length arrays, we compute distance between elements
      - one array, one scalar, we compute distance between array and scalar
-    
-    if sqrt dist <0.1 arcsec, we use Pythagoras
-    adopted from Enno Middelberg (2001)
 
-    one could also use starutil_numpy.degrees_between(),
-    but that appears to be slower (a factor of 30)
+    method uses starutil of astrometry.net
+    use starutil_numpy.degrees_between(), to get distance between all
+    combinations of ra1, ra2 (ie, a matrix). 
     '''
 
-    # make sure lists don't crew us up.
-    if type(ra1) == list: ra1 = np.asarray(ra1, dtype=np.float128)
-    if type(ra2) == list: ra2 = np.asarray(ra2, dtype=np.float128)
-    if type(dec1) == list: dec1 = np.asarray(dec1, dtype=np.float128)
-    if type(dec2) == list: dec2 = np.asarray(dec2, dtype=np.float128)
+    # 64bit is needed (otherwise we get rounding problems)
+    ra1 = np.asarray(ra1, dtype=np.float64)
+    ra2 = np.asarray(ra2, dtype=np.float64)
+    dec1 = np.asarray(dec1, dtype=np.float64)
+    dec2 = np.asarray(dec2, dtype=np.float64)
+    
+    xyz1 = sutil.radectoxyz(ra1, dec1)
+    xyz2 = sutil.radectoxyz(ra2, dec2)
 
-    cos_gamma = np.cos((90-dec1)*deg2rad)*np.cos((90-dec2)*deg2rad) + \
-        np.sin((90-dec1)*deg2rad)*np.sin((90-dec2)*deg2rad)*np.cos((ra1-ra2)*deg2rad)
-    rad = np.arccos(cos_gamma)
-    rad *= rad2deg
+    d2 = np.sum((xyz1-xyz2)**2, axis=1)
+    dist_rad = np.arccos(1. - 0.5*d2)
+        
+    return dist_rad * rad2deg
 
-    sq_rad=np.sqrt( (ra1-ra2)**2+(dec1-dec2)**2)
-    if np.isscalar(sq_rad):
-        if sq_rad < too_small_rad: rad = sq_rad
-    else: 
-        too_small = np.where( (sq_rad < too_small_rad) | (rad<=0))[0]
-        if verbose:
-            print 'ang_sep: setting rad Pythargoras approximation for:', len(too_small)
-            print 'sort(sqrt distance) [deg]', np.sort(sq_rad)
-            print 'sort(math distance) [deg]', np.sort(rad)
-        if len(too_small): rad[too_small] = sq_rad[too_small]
-                
-    return rad
 
 def one_match(ra0, dec0, ra, dec, rad):
     '''
-    matches between 
+    matches between one coordindate and an array
     >> m1, d = one_match(ra0, dec0, ra, dec, rad)
     '''
     dist = ang_sep(ra0, dec0, ra, dec)
@@ -310,6 +299,26 @@ def angdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     
     return cospy.distance.angular_diameter_distance(z,
                                                     **cosmo)[0]*1e6*parsec_in_cm
+
+def lum2flux(L, z=None, cm=None, nu=None, band=None,
+                     h=.72, omega_m_0=.3, omega_l_0=.7):
+    '''
+    erg/s to Jansky
+    >> flux = lum2flux(L, z, nu=1.4e9) # in Jy
+    input: 
+     - L: luminsity in erg/s
+     - z:  reshift
+     - nu in Hz, or choose from band=[FUV, NUV, u,g,r,i,z]
+     - cm is set, redshift is ignored
+    '''
+    if not(nu) and not(band):
+        print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
+        return None
+
+    if band is not(None):  nu = _get_nu(nu, band)
+    if cm is None: cm = lumdis(z, h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0)
+
+    return L / (nu * 4*np.pi * cm**2) *1e23 
           
 def flux2lum(S, z=None, cm=None, nu=None, band=None,
                      h=.72, omega_m_0=.3, omega_l_0=.7):
@@ -342,7 +351,9 @@ def dismod(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     d = lumdis(z, h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0)/parsec
     return 5*np.log10(d/10.)
 
-    
+
+abs_const = 4*np.pi* 3631e-23 *  (10*parsec_in_cm)**2
+
 def abs2lum(M, nu=None, band=None):
     '''
     absolute AB manitude to nu*L_nu
@@ -357,8 +368,22 @@ def abs2lum(M, nu=None, band=None):
 
     if not(nu):
         nu = _get_nu(band)
-    log_lum =(-0.4*M) + np.log10(3631.)-23 + np.log10(4*np.pi) + 2*np.log10(3e19) + np.log10(nu)
-    return 10**log_lum
+
+    return 10**(-0.4*M) * abs_const * nu
+
+
+def lum2abs(L, nu=None, band=None):
+    '''
+    nu Lnu (erg/s) to AB absolute mag
+    '''
+    if not(nu) and not(band):
+        print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
+        return None
+    if not(nu):
+        nu = _get_nu(band)    
+
+    return -2.5*np.log10(L/(abs_const*nu))
+
 
 def flux2mag(flux):
     '''
