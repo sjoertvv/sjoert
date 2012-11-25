@@ -74,6 +74,10 @@ def ang_sep(ra1, dec1, ra2, dec2):
 
     d2 = np.sum((xyz1-xyz2)**2, axis=1)
     dist_rad = np.arccos(1. - 0.5*d2)
+
+    # convert single element array to float 
+    if len(dist_rad) == 1:
+        dist_rad = dist_rad[0]
         
     return dist_rad * rad2deg
 
@@ -200,55 +204,42 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
 
 
 
-def iau_name(ra,dec,prefix='',precision=1):
+def iau_name(ra,dec,prefix='',precision=1, verbose=False):
     '''
     make IAU name from coordinates
     copied from hogg_iau_name
     
-    >> iau_name(350.95257, -1.1361928, prefix='TDE',precision=1)
+    >> iau_name(350.95257, -1.1361928, prefix='TDE ',precision=1)
     >> 'TDE J232348.61-010810.2'
     '''
     
     rah= int(floor(ra/15.0))
     ram= floor(((ra/15.0)-double(rah))*60.0)
     ras= (((ra/15.0)-double(rah))*60.0-double(ram))*60.0
-    ras= floor(ras*10.0**(precision+1))/10.0**(precision+1)
-    rasformat= '%'+str(precision+4)+ \
-               '.'+str(precision+1)+'f'
-    #print 'ras, rasformat:', ras, rasformat 
+    rasformat= '%'+str(precision+3)+ '.'+str(precision)+'f'
+    if (precision == 0): rasformat= '%2d'
+
+    if verbose: print 'ras, rasformat:', ras, rasformat 
 
     desgn= '+'
-    if dec <0:
-        desgn= '-'
+    if dec <0: desgn= '-'
 
     adec= abs(dec)
     ded= floor(adec)
     dem= floor((adec-double(ded))*60.0)
     des= ((adec-double(ded))*60.0-double(dem))*60.0
-    des= floor(des*10.0**precision)/10.0**precision
-    desformat= '%'+str(precision+3)+ \
-               '.'+str(precision)+'f'
-    #print 'des, desformat', des, desformat
+    desformat= '%'+str(precision+3)+ '.'+str(precision)+'f'
+    if (precision == 0): desformat= '%2d'
 
-    if (precision == 0):
-        desformat= '%2.2d'
+    if verbose: print 'des, desformat', des, desformat
 
-    adstr= '%2.2d'%rah \
-           + '%2.2d'%ram \
-           + rasformat %ras \
-           +desgn \
-           +'%2.2d'%ded \
-           +'%2.2d'%dem \
-           +desformat %des
+    adstr= '%2.2d'%rah + '%2.2d'%ram + rasformat %ras \
+           +desgn +'%2.2d'%ded +'%2.2d'%dem +desformat %des
 
     adstr=adstr.replace(' ','0')
     adstr=adstr.replace(' ','0')
 
-    if (prefix == ''):
-        jstr= 'J'
-    else:
-        jstr= ' J'
-    return prefix+jstr+adstr
+    return prefix+adstr
 
 
 sjoert_cosmo = cospy.parameters.WMAP7_BAO_H0_mean(flat=True, extras=False)
@@ -470,9 +461,21 @@ def schechter(M, h=0.72, paper='Blanton01'):
     >> rho  = schechter([-22, -23], h=0.72, paper='Blanton01')
     '''
     if paper== 'Blanton01':
-        M_s = -20.44 + 5*np.log10(h)
-        alpha = -1.05
-        psi_s = 1.49e-2 *h**3
+
+        # wrong r-band?
+        #M_s = -20.44 + 5*np.log10(h)
+        #alpha = -1.05
+        #psi_s = 1.49e-2 *h**3
+
+        # r-band
+        M_s = -20.83 + 5*np.log10(h)
+        alpha = -1.20
+        psi_s = 1.46e-2 *h**3
+
+        # g-band
+        #M_s = -20.04 + 5*np.log10(h)
+        #alpha = -1.26
+        #psi_s = 2.06e-2 *h**3
 
     if paper == 'Smith09': # K-band
         M_s = -23.19 + 5*np.log10(h)
@@ -500,6 +503,6 @@ def schechter(M, h=0.72, paper='Blanton01'):
         psi_s = 10**(-2.126) *h**3
 
     
-    return 0.4*np.log(10) * psi_s * 10**(0.4*(alpha+1)*(M_s-M) ) * \
-        np.exp( -10**( 0.4*(M_s-M) ) )
+    return 0.4*np.log(10) * psi_s * 10.0**(0.4*(alpha+1)*(M_s-M) ) * \
+        np.exp( -10.0**( 0.4*(M_s-M) ) )
     

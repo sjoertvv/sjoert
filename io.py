@@ -8,6 +8,15 @@ import pyfits
 import numpy as np
 import pickle
 
+def readpickle(filename):
+   '''
+   rec = readpickle(filename)
+   '''
+   f = open(filename,  'r')
+   rec = pickle.load(f)
+   f.close()
+   return rec
+
 def readascii(filename='', names='', comment='#',
               delimiter='', write_pickle=False, silent=False):
     '''
