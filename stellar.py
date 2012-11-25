@@ -17,9 +17,10 @@ except ImportError:
 
 try:
     import cosmolopy as cospy
+    sjoert_cosmo = cospy.parameters.WMAP7_BAO_H0_mean(flat=True, extras=False)
 except ImportError:
-    print 'cosmolopy import failed, function using distances will fail'
-    print 'get it from roban.github.com/CosmoloPy/'
+    print 'sjoert.stellar ImportError: cosmolopy import failed, function using distances will fail'
+    print '(get it from roban.github.com/CosmoloPy/)'
 
 
 # import some useful stuff from pyspherematch's util.starutil_numpy
@@ -241,9 +242,6 @@ def iau_name(ra,dec,prefix='',precision=1, verbose=False):
 
     return prefix+adstr
 
-
-sjoert_cosmo = cospy.parameters.WMAP7_BAO_H0_mean(flat=True, extras=False)
-#sjoert_cosmo = cospy.parameters.WMAP5_ML()
 
 def lumdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     '''
