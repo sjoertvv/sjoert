@@ -24,7 +24,7 @@ except ImportError:
 
 
 # import some useful stuff from pyspherematch's util.starutil_numpy
-from starutil_numpy import radectolb, lbtoradec
+from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
 import starutil_numpy as sutil
 
 
@@ -64,7 +64,7 @@ def ang_sep(ra1, dec1, ra2, dec2):
     combinations of ra1, ra2 (ie, a matrix). 
     '''
 
-    # 64bit is needed (otherwise we get rounding problems)
+    # (avoid rounding problems for inits)
     ra1 = np.asarray(ra1, dtype=np.float64)
     ra2 = np.asarray(ra2, dtype=np.float64)
     dec1 = np.asarray(dec1, dtype=np.float64)
