@@ -45,7 +45,7 @@ def slice_cols(ori_rec, sub_cols):
         if not(len(ii)):
             print 'error: sub_col not found in input rec:', n
             raise(IndexError)
-        new_dtype.append((n,full_dtype[ii][1]))
+        new_dtype.append(full_dtype[ii])
 
     # make new array and copy data from original
     new_rec = np.empty(len(ori_rec), dtype=new_dtype)
