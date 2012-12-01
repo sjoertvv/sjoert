@@ -97,12 +97,14 @@ def readascii(filename='', names='', comment='#',
 def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
     '''
     read from disk and convert fits table to python record array
-    >> rec = fits2rec(filename='', silent=False,
-                                ihdu=1, vizmod=False, verbose=False)
+    >> rec = fits2rec(filename='', ihdu=1, vizmod=False,
+                                silent=False, verbose=False)
 
     use ihdu keyword if data is not in HDU[1]
     vizmod keyword is used to rename '_RAj2000' to 'ra'
-    fails if fits table contains vector data 
+    
+    (Since PyFITS version 3, HDU table data inherits from numpy.ndarray,
+    so a conversion is no longer required)
     '''
     
     if not(filename) :
@@ -111,33 +113,33 @@ def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
     
     hdulist = pyfits.open(filename)
     tbdata = hdulist[ihdu].data
-    cols = tbdata.dtype
+    if verbose: print 'FITS dtype:', dtype
     hdulist.close()
 
+    new_dtype = tbdata.dtype # requires Pyfits version >3
     
     # give a better name to Vizier output
-    rec_names = np.array(cols.names)
     if vizmod:
-        for i,cc in enumerate(cols.names):
-            if cc == '_RAJ2000': rec_names[i] = 'ra'
-            if cc == '_DEJ2000': rec_names[i] = 'dec'
+        new_dtype = []
+        for i, dt in enumerate(tbdata.dtype.descr):
+            coln = dt[0]
+            if coln  == '_RAJ2000': coln= 'ra'
+            if coln == '_DEJ2000': coln = 'dec'
+            # Vizier output always has len(dt)==2
+            new_dtype.append((coln, dt[1])) 
 
-    pre_dtype = []
-    for i, coln in enumerate(cols.names):
-        col_data  = np.asarray(tbdata.field(coln))
-        pre_dtype += [(rec_names[i], col_data.dtype)]
+    newrec = np.empty(len(tbdata.field(0)), dtype=new_dtype)
 
-    dd = np.empty(len(tbdata.field(0)), dtype=np.dtype(pre_dtype))
     
-    for i, coln in enumerate(cols.names): 
+    for i, coln in enumerate(newrec.dtype.names): 
         if not(silent): print coln        
-        coldata = tbdata.field(coln).copy()
+        coldata = tbdata.field(tbdata.dtype.names[i]).copy()
         if verbose:
             print coldata
-            print dd[coln].dtype
-        dd[rec_names[i]] = coldata
+            print newrec[coln].dtype
+        newrec[coln] = coldata
 
-    return dd
+    return newrec
 
 
 def readfits(filename='', ihdu=1):
@@ -152,9 +154,10 @@ def readfits(filename='', ihdu=1):
     hdulist = pyfits.open(filename)
     tbdata = hdulist[ihdu].data
     cols = hdulist[ihdu].columns  
+
     hdulist.close()
-    
     for colname in cols.names: print colname
+       
     return tbdata
 
 def rec2fits(rec=None, filename=''):
