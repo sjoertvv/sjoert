@@ -113,30 +113,37 @@ def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
     
     hdulist = pyfits.open(filename)
     tbdata = hdulist[ihdu].data
-    if verbose: print 'FITS dtype:', dtype
+    if verbose: print 'FITS dtype:', tbdata.dtype
     hdulist.close()
 
+    
     new_dtype = tbdata.dtype # requires Pyfits version >3
     
     # give a better name to Vizier output
     if vizmod:
         new_dtype = []
-        for i, dt in enumerate(tbdata.dtype.descr):
-            coln = dt[0]
+        for i, name in enumerate(tbdata.dtype.names):
+            coln = name
+            # get dtype from column data (FITS dtype can be weird)
+            # at this stage we actually read the column 
+            dt = tbdata[coln][0:1].dtype.descr[0][1] 
             if coln  == '_RAJ2000': coln= 'ra'
             if coln == '_DEJ2000': coln = 'dec'
+
+            if not(silent): print coln        
             # Vizier output always has len(dt)==2
-            new_dtype.append((coln, dt[1])) 
+            new_dtype.append((coln, dt)) 
+
 
     newrec = np.empty(len(tbdata.field(0)), dtype=new_dtype)
 
     
     for i, coln in enumerate(newrec.dtype.names): 
-        if not(silent): print coln        
         coldata = tbdata.field(tbdata.dtype.names[i]).copy()
         if verbose:
-            print coldata
-            print newrec[coln].dtype
+            print 'data:\t', coldata
+            print 'dtype:\t', newrec[coln].dtype
+            print 'name in rec:\t',coln
         newrec[coln] = coldata
 
     return newrec

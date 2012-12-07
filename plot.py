@@ -1,10 +1,9 @@
 '''
 setup matplotlib for IDL-style high quality plots
 '''
-
-
 import re
 import os
+import bovy_plot
 
 from matplotlib import rc
 from matplotlib import pyplot as plt
@@ -45,7 +44,7 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
        (none)
     HISTORY:
        2009-12-23 - Written - Bovy (NYU)
-       2010-01-23 - New defauts more options, backend:ps - Sjoert
+       2010-01-23 - New defauts more options - Sjoert
     """
 
     if golden:
@@ -75,7 +74,8 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
               'figure.subplot.top':subplot_top}
 
     plt.rcParams.update(params)
-    rc('text.latex', preamble=r'\usepackage{amsmath}')
+    rc('text.latex', preamble=r'\usepackage{amsmath}') 
+    #rc('text.latex', preamble='\usepackage{sfmath}')
 
 def print_end(filename,nosticks=False,**kwargs):
     """
@@ -124,3 +124,58 @@ def _add_ticks():
     ystep= ax.yaxis.get_majorticklocs()
     ystep= ystep[1]-ystep[0]
     ax.yaxis.set_minor_locator(ticker.MultipleLocator(ystep/5.))
+
+
+import scipy as sc
+from scipy import special
+
+
+def bovy_dens2d(x,y, *args,**kwargs):
+    '''
+    wrapper around bovy_dens2d
+    hist_2d = bovy_dens2d(x,y, *args,**kwargs)
+    '''
+
+    if kwargs.has_key('xrange'):
+        xrange=kwargs['xrange']
+        kwargs.pop('xrange')
+    else:
+        xrange=[x.min(),x.max()]
+    if kwargs.has_key('yrange'):
+        yrange=kwargs['yrange']
+        kwargs.pop('yrange')
+    else:
+        yrange=[y.min(),y.max()]
+    ndata= len(x)
+    if kwargs.has_key('bins'):
+        bins= kwargs['bins']
+        kwargs.pop('bins')
+    else:
+        bins= round(0.3*sc.sqrt(ndata))
+    if kwargs.has_key('aspect'):
+        aspect= kwargs['aspect']
+        kwargs.pop('aspect')
+    else:
+        aspect= (xrange[1]-xrange[0])/(yrange[1]-yrange[0])
+    if kwargs.has_key('weights'):
+        weights= kwargs['weights']
+        kwargs.pop('weights')
+    else:
+        weights= None
+    if kwargs.has_key('levels'):
+        levels= kwargs['levels']
+        kwargs.pop('levels')
+    else:
+        levels= special.erf(0.5*sc.arange(1,4))
+
+    hh_2d, edges= sc.histogramdd(sc.array([x, y]).T,
+                                            bins=bins, range=[xrange ,yrange])
+
+    bovy_plot.bovy_dens2d(hh_2d.T,
+            contours=True,levels=levels,cntrmass=True,
+            cmap='gist_yarg',origin='lower',
+            xrange=xrange, yrange=yrange, aspect=aspect,
+            interpolation='nearest',  retCumImage=True, **kwargs)
+
+    return hh_2d
+    

@@ -45,7 +45,7 @@ Mpc2cm = parsec_in_cm *1e6
 cm2Mpc = 1/(parsec_in_cm *1e6)
 deg2rad = np.pi/180.
 rad2deg = 180. / np.pi
-rad2ac = rad2deg/3600.
+rad2ac = rad2deg*3600
 sqdegonsky = 129600. /np.pi
 
 too_small_rad = .1/3600. #,deg, delow this ang_sep can fail and we use Pythagoras
@@ -211,14 +211,16 @@ def iau_name(ra,dec,prefix='',precision=1, verbose=False):
     copied from hogg_iau_name
     
     >> iau_name(350.95257, -1.1361928, prefix='TDE ',precision=1)
-    >> 'TDE J232348.61-010810.2'
+    >> 'TDE 232348.6-010810.3'
     '''
     
     rah= int(floor(ra/15.0))
     ram= floor(((ra/15.0)-double(rah))*60.0)
     ras= (((ra/15.0)-double(rah))*60.0-double(ram))*60.0
     rasformat= '%'+str(precision+3)+ '.'+str(precision)+'f'
-    if (precision == 0): rasformat= '%2d'
+    if (precision == 0):
+        ras = np.round(ras)
+        rasformat= '%2d'
 
     if verbose: print 'ras, rasformat:', ras, rasformat 
 
@@ -230,7 +232,9 @@ def iau_name(ra,dec,prefix='',precision=1, verbose=False):
     dem= floor((adec-double(ded))*60.0)
     des= ((adec-double(ded))*60.0-double(dem))*60.0
     desformat= '%'+str(precision+3)+ '.'+str(precision)+'f'
-    if (precision == 0): desformat= '%2d'
+    if (precision == 0):
+        des = np.round(des)
+        desformat= '%2d'
 
     if verbose: print 'des, desformat', des, desformat
 
