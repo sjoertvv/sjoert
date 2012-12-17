@@ -18,7 +18,7 @@ def readpickle(filename):
    return rec
 
 def readascii(filename='', names='', comment='#',
-              delimiter='', write_pickle=False, silent=False):
+              delimiter='', write_pickle=False, silent=False, verbose=False):
     '''
     read asciitable, return record array
     >> rec = readascii(filename='', names='',formats='', comment='#',
@@ -62,7 +62,8 @@ def readascii(filename='', names='', comment='#',
                 scl_del = cl.strip(comment).split(delimiter)
             else:
                 scl_del = scl
-            if  (len(scl) == ncols): # & (cl.split()[0][0] == comment) ):
+            
+            if  (len(scl_del) == ncols): # & (cl.split()[0][0] == comment) ):
                 names = scl
                 if not silent: print 'using col names from header:', names
                 break

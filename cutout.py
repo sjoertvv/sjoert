@@ -1,6 +1,6 @@
 '''
 get subimage from fits image
-wcs info in header is update
+wcs info in header is updated
 '''
 
 import numpy as np
