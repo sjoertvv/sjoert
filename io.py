@@ -66,10 +66,6 @@ def readascii(filename='', names='', comment='#',
                 names = scl
                 if not silent: print 'using col names from header:', names
                 break
-            if (len(scl_del) == ncols):
-                names = scl_del
-                if not silent: print 'using col names from header:', names
-                break
             
     if len(names) != ncols:
         #print 'making columns with default names'
