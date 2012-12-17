@@ -124,13 +124,16 @@ def poisson_limits(n_i, conf):
     return np.array([limit_dn,limit_up])
 
 
-def his2scat(arr, bins=10, range=None, conv=0.8413):
+def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False):
     '''
     make scatter points form array (eg, for luminosity function)
     >> xx, yy, yy_err = his2scat(arr, bins=10, range=None, conv=0.8413)
 
     output is: the mid of the bins, the normalized value, the uncertainty for conv interval
-    (normalization is such that integration over the bins yields the length of the array)
+ 
+    normalization is such that integration over the bins yields the length of the array
+    use logbin flag to if input in log10, but normalization needs to be linear
+    (ie, input is logS, but output dN/dS) 
     
     note, negative bins are ignored
     todo: return upper limits for conv
@@ -141,7 +144,7 @@ def his2scat(arr, bins=10, range=None, conv=0.8413):
     if len(isfin)==0:
         print 'all bins are inf/nan?'
         return None
-    hh = np.histogram(arr[isfin], bins=bins, range=range, normed=False) 
+    hh = np.histogram(arr[isfin], bins=bins, range=range, normed=False)
 
     print 'number in bins', hh[0]
     ipos= np.where(hh[0]>0)[0]
@@ -153,8 +156,13 @@ def his2scat(arr, bins=10, range=None, conv=0.8413):
         print 'warning we have empty bins! skipping these'
 
     for i, ip in enumerate(ipos):
+
         xx[i] = (hh[1][ip]+hh[1][ip+1])/2.
+
         bin_width =  hh[1][ip+1]-hh[1][ip]
+        if logbin:
+            bin_width = 10**(hh[1][ip+1])-10**(hh[1][ip])
+            
         yy[i] = hh[0][ip] / bin_width
         plim = poisson_limits( hh[0][ip], conv)
         yy_err[:,i] =  abs(plim - hh[0][ip]) / bin_width

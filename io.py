@@ -42,7 +42,7 @@ def readascii(filename='', names='', comment='#',
     com_lines = []
     line = f.readline()
     com_lines.append(line)
-    while line[0] == comment: 
+    while (line[0] == comment) | (len(line) <= 1):
         line = f.readline() #read untill we reach data
         com_lines.append(line)
     sline = line.strip(comment).split()
