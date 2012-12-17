@@ -57,14 +57,13 @@ def readascii(filename='', names='', comment='#',
     if (names == '') and (len(com_lines)>1):
         com_lines.reverse()
         for cl in com_lines[1:]:
-            scl = cl.strip(comment).split()
             if delimiter:
-                scl_del = cl.strip(comment).split(delimiter)
+                scl_del = cl.strip(comment).strip('\n').split(delimiter)
             else:
-                scl_del = scl
+                scl_del = cl.strip(comment).strip('\n').split()
             
-            if  (len(scl_del) == ncols): # & (cl.split()[0][0] == comment) ):
-                names = scl
+            if  (len(scl_del) == ncols):
+                names = scl_del
                 if not silent: print 'using col names from header:', names
                 break
             
