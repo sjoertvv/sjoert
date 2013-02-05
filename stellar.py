@@ -355,11 +355,11 @@ def abs2lum(M, nu=None, band=None):
     input nu in Hz, or choose from band=[FUV, NUV, u,g,r,i,z]
     '''
 
-    if not(nu) and not(band):
+    if nu is None and band is None:
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
         return None
 
-    if not(nu):
+    if nu is None:
         nu = _get_nu(band)
 
     return 10**(-0.4*M) * abs_const * nu
@@ -384,8 +384,11 @@ def flux2mag(flux):
     '''
     return -2.5*np.log10(flux*1e-23) - 48.6
 
-#def mag2flux(mag):
-
+def mag2flux(mag):
+    '''
+    AB magnitude to Jansky
+    '''
+    return 10**(-0.4*(mag + 48.6)) *1e23
 
 def mag2lum(M, z, nu=None, band=None,
                       h=.72, omega_m_0=.3, omega_l_0=.7):
