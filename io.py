@@ -35,8 +35,7 @@ def readascii(filename='', names='', comment='#',
     try:         
         f = open(filename, 'r')
     except IOError:
-        print 'file not found'
-        raise(IOError)
+        raise(IOError(filename))
     
     # read through header, find number of columns
     com_lines = []
