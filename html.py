@@ -16,13 +16,13 @@ html_end()
 import numpy as np
 import os
 
-def html_header(title='', tracker=''):
+def html_header(title='', extra=''):
     out= '<html>\n  <head> \n  <title>'+title+'</title>\n '+\
-        tracker +'</head>\n  <body>\n'
+        extra +'</head>\n<body>\n'
     return out
 
-def tab_header(sarr, width=[]):
-    out = '  <table border=2 celpadding=5> \n'
+def tab_header(sarr, width=[], extra=''):
+    out = '  <table border=2 celpadding=5 '+extra+'>\n'
     out += '<tr> \t'
     if (len(sarr) != len(width)):
         width = np.repeat('300', len(sarr))

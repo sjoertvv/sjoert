@@ -170,6 +170,72 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False):
     return xx, yy, yy_err
 
 
+def binthem(x, y, bins=10,
+            cl=0.9, poisson=False, std=False, sqrtN=True, use_mean=False,
+            silent=False):
+    '''
+    bin x,y using bins in x-direction
+    >> xmid, ymid = binthem(x, y)
+
+    output:
+     xmid  (N) the mean value of x for each bin
+     ymid  (3,N) the median/mean value, uncertainty/dispersion 
+
+    the uncertainty is computed from the values in bin,
+    or using std, poisson stat if flags are set 
+
+    input:
+     - x,y  equal length arrays
+     - bins  number of xbins or array with bins (default is 10)
+     - cl=0.9  confidence level for computing the uncertainty
+     - poisson=False use Poisson stat to find uncertainty on number in bin
+     - std=False  use standard deviation / sqrt(N) to compute uncertainty (ie, symtric errorbars)
+     - sqrtN=True  set to False to use std only
+     - use_mean=False  use mean (median is default) 
+     - silent  shutup
+    '''
+
+    if np.isscalar(bins):
+        x_bins = np.linspace(np.min(x), np.max(x)*1.01, bins)
+    else:
+        x_bins = bins
+
+    xmid = np.zeros(len(x_bins)-1)
+    ymid = np.zeros((3,len(x_bins)-1))
+
+    for i in range(len(xmid)):
+
+        ibin = np.where((x>=x_bins[i]) & (x<x_bins[i+1]))[0]
+
+        xmid[i] = np.mean(x[ibin])
+
+        if len(ibin)>0:
+    
+            y_arr = y[ibin]
+
+            if use_mean:
+                ymid[0,i] = np.mean(y_arr)
+            else:
+                ymid[0,i] = np.median(y_arr)
+
+            if len(ibin)>1:
+                if std:
+                    ymid[[1,2],i] = np.std(y_arr)
+                    if sqrtN:
+                        ymid[[1,2],i]= ymid[[1,2],i]/ np.sqrt(len(ibin))
+                elif poisson:
+                    ymid[[1,2],i] = np.abs(poisson_limits(np.sum(y[ibin]), cl)/len(ibin)- ymid[0,i])
+                else:
+                    y_arrs = np.sort(y_arr)
+                    ii = np.arange(len(ibin))
+                    ymid[1,i] = np.abs(ymid[0,i]-np.interp( (cl/2.+0.5)*len(ibin), ii, y_arrs))
+                    ymid[2,i] = np.abs(ymid[0,i]-np.interp( (cl/2.-0.5)*len(ibin), ii, y_arrs))
+
+        if not silent:
+            print xmid[i], len(ibin), ymid[:,i]
+
+    return xmid, ymid
+
 def poisson_limits_frac(numer=2, denom=4, cl=0.9,contained=True,
                         nmc=1000, verbose=False):
     '''
@@ -181,7 +247,7 @@ def poisson_limits_frac(numer=2, denom=4, cl=0.9,contained=True,
     - verbose=False, make plots
     - nmc=1000 number of Monte Carlo samples
 
-    (not 100% if this method is correct, I never used this function for any publication)
+    (never used this function for any publication, it may actualy be wrong)
     '''
 
     nn = 1000
