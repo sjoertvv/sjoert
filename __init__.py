@@ -14,7 +14,7 @@ import stellar
 import simstat
 import plot
 import misc
-import catalogs
+#import catalogs should become seperate rep
 import latex
 
 __all__ = ['io','rec','dirs','cutout','html', 'stellar','catalogs','simstat','plot','misc', 'latex']
