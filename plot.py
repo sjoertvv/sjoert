@@ -3,7 +3,10 @@ setup matplotlib for IDL-style high quality plots
 '''
 import re
 import os
-import bovy_plot
+try:
+     import bovy_plot
+except ImportError:
+     dummy = 'No dens2 wrappers this time'
 
 from matplotlib import rc
 from matplotlib import pyplot as plt
