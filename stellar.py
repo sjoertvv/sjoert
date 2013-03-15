@@ -208,7 +208,7 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
 def iau_name(ra,dec,prefix='',precision=1, verbose=False):
     '''
     make IAU name from coordinates
-    copied from hogg_iau_name
+    copied from hogg_iau_name (by D.W. Hogg)
     
     >> iau_name(350.95257, -1.1361928, prefix='TDE ',precision=1)
     >> 'TDE 232348.6-010810.3'
