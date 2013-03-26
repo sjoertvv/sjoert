@@ -260,7 +260,7 @@ def lumdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     cosmo['omega_M_0'] = omega_m_0
     cosmo['omega_lambda_0'] = omega_l_0
     
-    return cospy.distance.luminosity_distance(z, **cosmo)[0]*1e6*parsec_in_cm
+    return cospy.distance.luminosity_distance(z, **cosmo)*1e6*parsec_in_cm
 
 def comdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     '''
@@ -275,7 +275,7 @@ def comdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     cosmo['omega_M_0'] = omega_m_0
     cosmo['omega_lambda_0'] = omega_l_0
     
-    return cospy.distance.comoving_distance(z, **cosmo)[0]*1e6*parsec_in_cm
+    return cospy.distance.comoving_distance(z, **cosmo)*1e6*parsec_in_cm
 
 def angdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     '''
@@ -291,7 +291,7 @@ def angdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     cosmo['omega_lambda_0'] = omega_l_0
     
     return cospy.distance.angular_diameter_distance(z,
-                                                    **cosmo)[0]*1e6*parsec_in_cm
+                                                    **cosmo)*1e6*parsec_in_cm
 
 def lum2flux(L, z=None, cm=None, nu=None, band=None,
                      h=.72, omega_m_0=.3, omega_l_0=.7):
