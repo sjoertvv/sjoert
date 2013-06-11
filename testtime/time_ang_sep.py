@@ -43,11 +43,11 @@ su_dist2 = sjoert.stellar.sutil.degrees_between(ra1[0], dec1[0], ra2, dec2)
 print 'time for starutil (ra1[0], dec1[0], ra2, dec2)', time.time() - time0
 
 time0 = time.time()
-sj_dist = sjoert.stellar.ang_sep(ra1, dec1, ra2[0], dec2[0])
-print 'time for ang_sep', time.time() - time0
+sj_dist = sjoert.stellar.ang_sep_xyz(ra1, dec1, ra2[0], dec2[0])
+print 'time for ang_sep_xyz', time.time() - time0
 
 time0 = time.time()
-ha_dist = asep(ra1, dec1, ra2[0], dec2[0])
+ha_dist = sjoert.stellar.ang_sep(ra1, dec1, ra2[0], dec2[0])
 print 'time for Havesine', time.time() - time0
 
 time0 = time.time()

@@ -21,7 +21,7 @@ def readascii(filename='', names='', comment='#',
               delimiter='', write_pickle=False, silent=False, verbose=False):
     '''
     read asciitable, return record array
-    >> rec = readascii(filename='', names='',formats='', comment='#',
+    >> rec = readascii(filename='', names='', comment='#',
                                   delimiter='', write_pickle=False, silent=False):
                                   
     if header contains a line that equals the number of columns

@@ -48,11 +48,41 @@ rad2deg = 180. / np.pi
 rad2ac = rad2deg*3600
 sqdegonsky = 129600. /np.pi
 
-too_small_rad = .1/3600. #,deg, delow this ang_sep can fail and we use Pythagoras
+
+def ahav(a):
+    '''
+    inverse Haversine
+    '''
+    return np.arccos(1 - 2 * a)
+def hav(theta):
+    '''
+    Haversine
+    '''
+    return (1 - np.cos(theta))/2.
 
 def ang_sep(ra1, dec1, ra2, dec2):
     '''
-    >> dist = ang_sep(ra1, dec1, ra2, dec2)
+    >> dist = ang_sep_xyz(ra1, dec1, ra2, dec2)
+
+    input/output in degree
+    input can be:
+     - two equal length arrays, we compute distance between elements
+     - one array, one scalar, we compute distance between array and scalar
+
+     uses Havesine functions
+    '''
+    ra1 = np.asarray(ra1*deg2rad, dtype=np.float64)
+    ra2 = np.asarray(ra2*deg2rad, dtype=np.float64)
+    dec1 = np.asarray(dec1*deg2rad, dtype=np.float64)
+    dec2 = np.asarray(dec2*deg2rad, dtype=np.float64)
+
+    radsep = ahav(hav(dec2-dec1) + np.cos(dec1) * np.cos(dec2) * hav(ra2 - ra1))
+    
+    return radsep / deg2rad
+
+def ang_sep_xyz(ra1, dec1, ra2, dec2):
+    '''
+    >> dist = ang_sep_xyz(ra1, dec1, ra2, dec2)
 
     input/output in degree
     input can be:

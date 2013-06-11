@@ -2,13 +2,18 @@
 simple/basic statistical tools mostly about counting things (ie, Poisson)
 2010 - Sjoert van Velzen
 '''
-
 import numpy as np
 from numpy.random import rand
 from matplotlib import pyplot as plt
 import scipy.stats.distributions as pydist
 import time
 
+def Gauss(x, mu=0, sigma=1):
+    '''
+    Gaussian probablity distribution
+    P = Gauss(x, mu=0, sigma=1)
+    '''
+    return 1/(sigma*np.sqrt(2*np.pi)) * np.exp(-0.5 * (x-mu)**2 / (sigma**2) )
 
 def wmean(d, ivar):
     '''
