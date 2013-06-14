@@ -129,7 +129,7 @@ def poisson_limits(n_i, conf):
     return np.array([limit_dn,limit_up])
 
 
-def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False):
+def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, silent=False):
     '''
     make scatter points form array (eg, for luminosity function)
     >> xx, yy, yy_err = his2scat(arr, bins=10, range=None, conv=0.8413)
@@ -151,14 +151,16 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False):
         return None
     hh = np.histogram(arr[isfin], bins=bins, range=range, normed=False)
 
-    print 'number in bins', hh[0]
+    if not(silent):
+        print 'number in bins', hh[0]
     ipos= np.where(hh[0]>0)[0]
 
     xx = np.zeros(len(ipos))
     yy = np.zeros(len(ipos))
     yy_err = np.zeros((2,len(ipos)))
     if len(ipos) != len(hh[0]):
-        print 'warning we have empty bins! skipping these'
+        if not(silent):
+            print 'warning we have empty bins! skipping these'
 
     for i, ip in enumerate(ipos):
 
