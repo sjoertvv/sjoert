@@ -37,7 +37,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
         print 'file :'+ filename+ '\n not found' 
         return
     
-    if not(center[0]):
+    if not np.isscalar(center[0]):
         print 'please give center=[ra, dec]'
         return
 
