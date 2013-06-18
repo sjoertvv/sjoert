@@ -11,7 +11,7 @@ from sjoert.stellar import iau_name
 
 # input
 def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
-           writepdf=False, writefits=False):
+           writepdf=False, writefits=False, silent=False):
     '''
     >> sub_hdu = cutout(filename='file.fits', center=[12,-1.], im_size=0.1,
                                         writepdf=False, writefits=False)
@@ -58,21 +58,21 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
     im = hdu.data
     
 
-    print 'image shape', im.shape
+    if not silent: print 'image shape', im.shape
     if (len(im.shape) == 3):
-        print 'using first layer of image'
+        if not silent: print 'using first layer of image'
         im = im[0,:,:]
         print 'new image shape', im.shape
     if (len(im.shape) == 4):
-        print 'using first layer of image'
+        if not silent: print 'using first layer of image'
         im = im[0,0,:,:]
-        print 'new image shape', im.shape
+        if not silent: print 'new image shape', im.shape
 
     # conver center en overplot coordinates
     pcenter = (wcs.wcs_sky2pix([center], 1))[0]
 
     # slice the image
-    print 'center in pixel coordinates', pcenter
+    if not silent: print 'center in pixel coordinates', pcenter
 
     # use true sky location (creates non-square images)
     #delta_ax1 = (np.abs(wcs.wcs_sky2pix([ [center[0]-im_size, center[1]] ], 1) - pcenter)/2.)[0][0]
@@ -94,7 +94,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
     if (ax2l < 0): ax2l = 0
     if (ax2u > im.shape[0]): ax2u = im.shape[0]
 
-    print 'ax2l,ax2u, ax1l,ax1u', ax2l,ax2u,ax1l,ax1u
+    if not silent: print 'ax2l,ax2u, ax1l,ax1u', ax2l,ax2u,ax1l,ax1u
 
     subim = im[ax2l:ax2u,ax1l:ax1u ]
 
@@ -111,7 +111,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
         if filename =='':
             print 'warning, not filename given pdf or fits file, using IAU name'
             outname = iau_name(center[0], center[1])
-        print 'base for output file:', outname
+        if not silent: print 'base for output file:', outname
             
 
     if writepdf:
@@ -131,7 +131,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
         if not(type(writepdf) is str):
             outfile = outname+'_sub.pdf'
         else: outfile = writepdf
-        print 'writing', outfile
+        if not silent: print 'writing', outfile
         plt.savefig(outfile, format='pdf')
 
     #make new WCS and save fits
@@ -146,7 +146,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
     ## keep CRVAL1 the same, but swift its pixel coodindates
     sub_hdr['CRPIX1'] = np.floor(hdu.header['CRPIX1'] - ax1l ) +1
     sub_hdr['CRPIX2'] = np.floor(hdu.header['CRPIX2'] - ax2l ) +1
-    print 'orgininal CRVAL (', hdu.header['CRVAL1'], hdu.header['CRVAL2'],\
+    if not silent: print 'orgininal CRVAL (', hdu.header['CRVAL1'], hdu.header['CRVAL2'],\
                               ') in sub image pixel coordindates:', sub_hdr['CRPIX1'] , sub_hdr['CRPIX2'] 
 
     # note, after this call sub_hdu.header is differnt the input than sub_hdr
@@ -158,7 +158,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
         if not(type(writefits) is str):
             outfile = outname+'_sub.fits'
         else: outfile = writefits
-        print 'writing:', outfile
+        if not silent: print 'writing:', outfile
         sub_hdu.writeto(outfile,clobber=True)
 
 
