@@ -98,7 +98,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
 
     subim = im[ax2l:ax2u,ax1l:ax1u ]
 
-    print 'subim shape:',subim.shape
+    if not silent: print 'subim shape:',subim.shape
     if min(subim.shape) == 0:
         print 'ERROR. something is wrong with the cutout (center+/-im_size out of bounds?) '
         return None
