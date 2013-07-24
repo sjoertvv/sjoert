@@ -6,6 +6,39 @@ import time
 import numpy as np
 import sjoert.stellar
 from matplotlib import pyplot as plt
+import sjoert.starutil_numpy as sutil
+
+def ang_sep_xyz(ra1, dec1, ra2, dec2):
+    '''
+    >> dist = ang_sep_xyz(ra1, dec1, ra2, dec2)
+
+    input/output in degree
+    input can be:
+     - two equal length arrays, we compute distance between elements
+     - one array, one scalar, we compute distance between array and scalar
+
+    method uses starutil of astrometry.net
+    use starutil_numpy.degrees_between(), to get distance between all
+    combinations of ra1, ra2 (ie, a matrix). 
+    '''
+
+    # (avoid rounding problems for inits)
+    ra1 = np.asarray(ra1, dtype=np.float64)
+    ra2 = np.asarray(ra2, dtype=np.float64)
+    dec1 = np.asarray(dec1, dtype=np.float64)
+    dec2 = np.asarray(dec2, dtype=np.float64)
+    
+    xyz1 = sutil.radectoxyz(ra1, dec1)
+    xyz2 = sutil.radectoxyz(ra2, dec2)
+
+    d2 = np.sum((xyz1-xyz2)**2, axis=1)
+    dist_rad = np.arccos(1. - 0.5*d2)
+
+    # convert single element array to float 
+    if len(dist_rad) == 1:
+        dist_rad = dist_rad[0]
+        
+    return dist_rad * rad2deg
 
 
 #Haversine functions
@@ -43,7 +76,7 @@ su_dist2 = sjoert.stellar.sutil.degrees_between(ra1[0], dec1[0], ra2, dec2)
 print 'time for starutil (ra1[0], dec1[0], ra2, dec2)', time.time() - time0
 
 time0 = time.time()
-sj_dist = sjoert.stellar.ang_sep_xyz(ra1, dec1, ra2[0], dec2[0])
+sj_dist = ang_sep_xyz(ra1, dec1, ra2[0], dec2[0])
 print 'time for ang_sep_xyz', time.time() - time0
 
 time0 = time.time()

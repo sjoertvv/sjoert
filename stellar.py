@@ -25,7 +25,6 @@ except ImportError:
 
 # import some useful stuff from pyspherematch's util.starutil_numpy
 from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
-import starutil_numpy as sutil
 
 
 from numpy import floor, double
@@ -75,37 +74,6 @@ def ang_sep(ra1, dec1, ra2, dec2):
     
     return radsep / deg2rad
 
-def ang_sep_xyz(ra1, dec1, ra2, dec2):
-    '''
-    >> dist = ang_sep_xyz(ra1, dec1, ra2, dec2)
-
-    input/output in degree
-    input can be:
-     - two equal length arrays, we compute distance between elements
-     - one array, one scalar, we compute distance between array and scalar
-
-    method uses starutil of astrometry.net
-    use starutil_numpy.degrees_between(), to get distance between all
-    combinations of ra1, ra2 (ie, a matrix). 
-    '''
-
-    # (avoid rounding problems for inits)
-    ra1 = np.asarray(ra1, dtype=np.float64)
-    ra2 = np.asarray(ra2, dtype=np.float64)
-    dec1 = np.asarray(dec1, dtype=np.float64)
-    dec2 = np.asarray(dec2, dtype=np.float64)
-    
-    xyz1 = sutil.radectoxyz(ra1, dec1)
-    xyz2 = sutil.radectoxyz(ra2, dec2)
-
-    d2 = np.sum((xyz1-xyz2)**2, axis=1)
-    dist_rad = np.arccos(1. - 0.5*d2)
-
-    # convert single element array to float 
-    if len(dist_rad) == 1:
-        dist_rad = dist_rad[0]
-        
-    return dist_rad * rad2deg
 
 
 def one_match(ra0, dec0, ra, dec, rad):
