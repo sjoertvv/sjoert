@@ -1,7 +1,7 @@
 '''
 various function for astronomy. 
  - wrappers around cosmolopy (lumdis(z), dismod(z) etc.)
- - very simple friends-of-friends (one_group)
+ - very simle friends-of-friends (one_group)
  - luminosity functions (schechter)
  - angular distance, and more
 2010 May - started (Sjoert van Velzen, Radboud, NL)
@@ -30,11 +30,6 @@ import starutil_numpy as sutil
 
 from numpy import floor, double
 import numpy as np
-
-# own (sjoert) inports
-import dirs
-import io
-
 
 # some constants
 parsec = 3.08568e18 # cm
@@ -507,10 +502,15 @@ def schechter(M, h=0.72, paper='Blanton01'):
         alpha = -1.20
         psi_s = 1.46e-2 *h**3
 
-        # g-band
-        #M_s = -20.04 + 5*np.log10(h)
-        #alpha = -1.26
-        #psi_s = 2.06e-2 *h**3
+    if paper== 'Blanton01_gband':
+        M_s = -20.04 + 5*np.log10(h)
+        alpha = -1.26
+        psi_s = 2.06e-2 *h**3
+
+    if paper== 'Gaia':
+        M_s = -20.04 + 5*np.log10(h)
+        alpha = -1.0
+        psi_s = 4e-3 *h**3
 
     if paper == 'Smith09': # K-band
         M_s = -23.19 + 5*np.log10(h)
