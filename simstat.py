@@ -235,8 +235,9 @@ def binthem(x, y, bins=10,
                 else:
                     y_arrs = np.sort(y_arr)
                     ii = np.arange(len(ibin))
-                    ymid[1,i] = np.abs(ymid[0,i]-np.interp( (cl/2.+0.5)*len(ibin), ii, y_arrs))
-                    ymid[2,i] = np.abs(ymid[0,i]-np.interp( (cl/2.-0.5)*len(ibin), ii, y_arrs))
+                    ymid[1,i] = np.abs(ymid[0,i]-np.interp( (cl/2.-0.5)*len(ibin), ii, y_arrs))
+                    ymid[2,i] = np.abs(ymid[0,i]-np.interp( (cl/2.+0.5)*len(ibin), ii, y_arrs))
+
 
         if not silent:
             print xmid[i], len(ibin), ymid[:,i]

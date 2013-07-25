@@ -450,7 +450,7 @@ def Rs(Mbh):
     return 2*Mbh*2e30*6.7e-11/9e16 *1e2 # cm
 
 
-def schechter(M, h=0.72, paper='Blanton01'):
+def schechter(M, h=0.72, paper='Blanton03'):
     '''
     the Schelter function for the 
     possible papers: r-band: Blanton01  (default)
@@ -458,17 +458,20 @@ def schechter(M, h=0.72, paper='Blanton01'):
 
     >> rho  = schechter([-22, -23], h=0.72, paper='Blanton01')
     '''
+    # r-band Blanton01 (z=0)
     if paper== 'Blanton01':
 
-        # wrong r-band?
-        #M_s = -20.44 + 5*np.log10(h)
-        #alpha = -1.05
-        #psi_s = 1.49e-2 *h**3
-
-        # r-band
         M_s = -20.83 + 5*np.log10(h)
         alpha = -1.20
         psi_s = 1.46e-2 *h**3
+
+    # r-band shifted to z=0.1
+    if paper== 'Blanton01':
+
+ 
+        M_s = -20.44 + 5*np.log10(h)
+        alpha = -1.05
+        psi_s = 1.49e-2 *h**3
 
     if paper== 'Blanton01_gband':
         M_s = -20.04 + 5*np.log10(h)
