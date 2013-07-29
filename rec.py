@@ -5,6 +5,29 @@ also some other tools for arrays/lists
 '''
 import numpy as np
 
+def list2rec(dd, n=1, default=False):
+    '''
+    return empty records arrray from a list/tuple of pairs: (('col1', 0.),('col2', 'b') )
+    >> rec = dict2rec(dict, n=10, default=False)
+
+    n: number of rows
+    set default=True to use value of dict as intial value (not empty)
+    '''
+
+    pre_dtype = []
+    
+    for el in dd:
+        this_type  = np.array(el[1]).dtype
+        print el[1], this_type
+        pre_dtype+= [(el[0], this_type)]
+    newrec = np.empty(n ,dtype=np.dtype(pre_dtype))
+
+    if default:
+        for el in dd:
+            newrec[el[0]] = el[1]
+
+    return newrec
+
 def dict2rec(dd, n=1, default=False):
     '''
     return empty records arrray from dictionary keys

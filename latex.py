@@ -65,7 +65,7 @@ def f2latex(flt, nd=1, debug=False):
 
 
 
-def rec2table(rec,  names=None, units=None, ndeci=1, filename=None):
+def rec2table(rec,  latex_names=None, dt_names=None, units=None, ndeci=1, filename=None):
     '''
     turn np.recarray into latex table
     >> rec2table(rec, units=None, filename=None)
@@ -78,14 +78,19 @@ def rec2table(rec,  names=None, units=None, ndeci=1, filename=None):
     -- ndeci: number digits after decimal point (default=1)
     '''
     
-    if not Names: 
-        names = rec.dtype.names
-        
+    if not dt_names: 
+        dt_names = rec.dtype.names
+
+    if not latex_names: 
+        latex_names = rec.dtype.names
+    else: 
+        latex_names = cols
+    
     cols = []
-    for n in names:
+    for n in dt_names:
         cols.append(rec[n])
 
-    return table(cols, names=names, units=units, filename=filename, ndeci=ndeci)
+    return table(cols, names=col_names, units=units, filename=filename, ndeci=ndeci)
     
 def table(cols, names=None, units=None, ndeci=1, \
           filename=None, top=None, bottom=None):
