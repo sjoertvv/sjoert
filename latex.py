@@ -65,22 +65,30 @@ def f2latex(flt, nd=1, debug=False):
 
 
 
-def rec2table(rec, units=None, filename=None):
+def rec2table(rec,  names=None, units=None, ndeci=1, filename=None):
     '''
     turn np.recarray into latex table
     >> rec2table(rec, units=None, filename=None)
 
-    calls table function with recarray columns names 
+    calls table function with recarray columns names
+    optional input; 
+    -- names: overwrites the recarray names
+    -- units: second row of latex table
+    -- filename: for writing 
+    -- ndeci: number digits after decimal point (default=1)
     '''
     
-    names = rec.dtype.names
+    if not Names: 
+        names = rec.dtype.names
+        
     cols = []
     for n in names:
         cols.append(rec[n])
 
-    return table(cols, names, units, filename)
+    return table(cols, names=names, units=units, filename=filename, ndeci=ndeci)
     
-def table(cols, names=None, units=None, filename=None, top=None, bottom=None):
+def table(cols, names=None, units=None, ndeci=1, \
+          filename=None, top=None, bottom=None):
     '''
     latex tabular from columns
 
@@ -96,6 +104,7 @@ def table(cols, names=None, units=None, filename=None, top=None, bottom=None):
     option input:
      - names = list of names (ie, first row of table)
      - units = list of units of columns (ie, second  row of table header)
+     - ndeci=list for digits after decimal points 
      - filename='./table.tex'
      - top=str , top header  (eg, '\begin{table} \n ... ')
      - botom=str, bottom lines (eg, 'end{table}')
@@ -103,7 +112,15 @@ def table(cols, names=None, units=None, filename=None, top=None, bottom=None):
     if names:
         if len(cols) != len(names):
             print 'error, len(cols) != len(names):', len(cols), len(names)
+            return
 
+    if np.isscalar(ndeci): 
+        ndeci = np.repeat(ndeci, len(cols))
+
+    if len(ndeci) != len(cols):
+        print 'error, len(ndeci) != len(cols)'
+        return
+            
     if filename:
         f = open(filename, 'w')
 
@@ -154,8 +171,11 @@ def table(cols, names=None, units=None, filename=None, top=None, bottom=None):
             cc = cols[j][i]
             if np.issubdtype(type(cc), str):
                 ss +=' & '+ cc
+            elif np.issubdtype(type(cc), int):
+                 ss += ' & '+str(cc)            
             else:
-                ss += ' & '+f2latex(cc)            
+                ss += ' & '+f2latex(cc, nd=ndeci[i])
+                            
         ss += '\\\\'
         if filename:
             f.writelines(ss+'\n')

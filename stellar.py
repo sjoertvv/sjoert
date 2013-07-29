@@ -295,7 +295,7 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
      - L: luminsity in erg/s
      - z:  reshift
      - nu in Hz, or choose from band=[FUV, NUV, u,g,r,i,z]
-     - cm is set, redshift is ignored
+     - cm if set, redshift is ignored
     '''
     if not(nu) and not(band):
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
@@ -466,9 +466,8 @@ def schechter(M, h=0.72, paper='Blanton03'):
         psi_s = 1.46e-2 *h**3
 
     # r-band shifted to z=0.1
-    if paper== 'Blanton01':
+    if paper== 'Blanton03':
 
- 
         M_s = -20.44 + 5*np.log10(h)
         alpha = -1.05
         psi_s = 1.49e-2 *h**3
