@@ -83,14 +83,12 @@ def rec2table(rec,  latex_names=None, dt_names=None, units=None, ndeci=1, filena
 
     if not latex_names: 
         latex_names = rec.dtype.names
-    else: 
-        latex_names = cols
     
     cols = []
     for n in dt_names:
         cols.append(rec[n])
 
-    return table(cols, names=col_names, units=units, filename=filename, ndeci=ndeci)
+    return table(cols, names=latex_names, units=units, filename=filename, ndeci=ndeci)
     
 def table(cols, names=None, units=None, ndeci=1, \
           filename=None, top=None, bottom=None):
