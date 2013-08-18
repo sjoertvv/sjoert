@@ -65,17 +65,21 @@ def f2latex(flt, nd=1, debug=False):
 
 
 
-def rec2table(rec,  latex_names=None, dt_names=None, units=None, ndeci=1, filename=None):
+def rec2table(rec,  latex_names=None, dt_names=None, units=None, 
+              ndeci=1, top=None, bottom=None, filename=None):
     '''
     turn np.recarray into latex table
     >> rec2table(rec, units=None, filename=None)
 
     calls table function with recarray columns names
     optional input; 
-    -- names: overwrites the recarray names
-    -- units: second row of latex table
-    -- filename: for writing 
-    -- ndeci: number digits after decimal point (default=1)
+    - latex_names: overwrites the recarray names
+    - dt_names: subset of names of the rec.array to use
+    - units: second row of latex table
+    - ndeci=list for digits after decimal points 
+    - filename='./table.tex'
+    - top=str , top header  (eg, '\begin{table} \n ... ')
+    - botom=str, bottom lines (eg, 'end{table}')
     '''
     
     if not dt_names: 
@@ -88,7 +92,8 @@ def rec2table(rec,  latex_names=None, dt_names=None, units=None, ndeci=1, filena
     for n in dt_names:
         cols.append(rec[n])
 
-    return table(cols, names=latex_names, units=units, filename=filename, ndeci=ndeci)
+    return table(cols, names=latex_names, units=units, ndeci=ndeci,\
+                 top=top, bottom=bottom, filename=filename)
     
 def table(cols, names=None, units=None, ndeci=1, \
           filename=None, top=None, bottom=None):

@@ -244,96 +244,35 @@ def binthem(x, y, bins=10,
 
     return xmid, ymid
 
-def poisson_limits_frac(numer=2, denom=4, cl=0.9,contained=True,
-                        nmc=1000, verbose=False):
+
+def cdf_match(x,y, new_len=None):
     '''
-    >> low, up = poisson_limits_frac(numer=2, denom=4, cl=0.9, verbose=True)
-    return CL interval from Possion probablity for observed fraction 
-    if both numerator denominator are drawn from Poisson distribution
-    option input:
-    - contained=True, the numerator is *contained* in the fraction (ie, ratio<=1 is enforced)
-    - verbose=False, make plots
-    - nmc=1000 number of Monte Carlo samples
+    y, idx = cdf_match(x,y)
+    retrun subset of y + index to this subset 
+    this subset is constructed to have the same 
+    cummulative distribution function as x
+    so len(y)>len(x) is assumed (otherwise we greatly oversample y)
 
-    (never used this function for any publication, it may actualy be wrong)
-    '''
+    optional input: 
+    - new_len=N, make length of y equal to N 
+    ''' 
 
-    nn = 1000
-    time0= time.time()
-    possible_numer = np.linspace(max(numer-8*np.sqrt(numer),numer/100.),
-                                 numer+8*np.sqrt(numer),nn) # possible underlying true value
-    possible_denom = np.linspace(max(denom-8*np.sqrt(denom),denom/100.),
-                                 denom+8*np.sqrt(denom),nn) # possible underlying true value
+    if new_len is None:
+        new_len = len(x) 
 
-    cvis_numer = 1-pydist.poisson.cdf(numer, possible_numer)
-    cvis_denom = 1-pydist.poisson.cdf(denom, possible_denom)
-
-    if verbose:
-        print 'time for direct prob', time.time()-time0
-        plt.clf()
-        vis = pydist.poisson.pmf(numer, possible_numer)
-        vis2 = pydist.poisson.pmf(denom, possible_denom)
-        plt.plot(possible_numer, vis, 'o-')
-        plt.plot(possible_denom, vis2, 'x-')
-        plt.plot(possible_numer, cvis_numer, 'x-')
-
-        key = raw_input()
-
-    # draw possible true means from poisson distribution
-    time0= time.time()
-    uni = np.random.rand(2,nmc)
-    ratio = np.zeros(nmc)
-    temp = np.zeros(nmc)
-
-    for i in range(nmc):
-        pn = np.interp(uni[0,i], cvis_numer, possible_numer)
-        pd = np.interp(uni[1,i], cvis_denom, possible_denom)
-        if verbose: print uni[0,i], uni[1,i],  pn, pd
-        ratio[i] = pn/pd
-        temp[i] = pn
+    # drawn new y 
+    x_cdf = np.sort(x), np.linspace(0, 1, len(x))
+    y_pref =  np.interp(np.random.rand(new_len), x_cdf[1], x_cdf[0])
+    # get index to true y
+    y_idx = np.round(np.interp(y_pref, np.sort(y), np.arange(len(y))))
+    y_idx = np.array(y_idx, dtype=np.int)
+    # conver to int and return new y array
+    return  y[y_idx], y_idx
     
-    if contained: ratio = ratio[np.where(ratio<=1)]
-
-    # make cumulative distribution
-    ratio.sort()
-    cum = np.arange(len(ratio))/float(len(ratio))
-    temp = np.sort(temp)
-    cum_temp = np.arange(len(temp))/float(len(temp))
-
-    if verbose:
-        hh = plt.hist(temp, bins=200, normed=True, alpha=0.5)
-        xx=np.zeros(len(hh[0]))
-        yy = np.zeros(len(hh[0]))
-        for i in np.arange(len(hh[0])-1)+1:
-            ww = hh[1][i+1]-hh[1][i]
-            xx[i] = hh[1][i]+ww*0.5
-            yy[i] = yy[i-1]+hh[0][i]*ww
-        plt.plot(xx,yy)
-        key = raw_input(' next, hist')
-
-        plt.hist(temp, bins=100, normed=True, cumulative=True, alpha=0.5)
-        print 'time for mc of ratio (s)', time.time()-time0
-        print 'mean, median ratio', np.mean(ratio), np.median(ratio)
-        print 'p=0.5', np.interp(0.5, cum, ratio)
-        print 'p=0.05',np.interp(0.05, cum, ratio) 
-        print 'p=0.95', np.interp(0.95, cum, ratio)
-        print '90% CL only on numinator', poisson_limits(numer, 0.9)/denom
-
-        print ''
-        print 'p=0.05, numer',np.interp(0.05, cum_temp, temp), temp[0.05*nmc]
-        print 'p=0.05, numer after his', np.interp(0.05,yy,xx)
-        print 'p=0.975, numer', np.interp(0.975, cum_temp, temp),temp[0.975*nmc]
-        print 'p=0.01, numer',np.interp(0.01, cum_temp, temp)
-        print 'p=0.99, numer', np.interp(0.99, cum_temp, temp)
-        print '90% CL  numinator', poisson_limits(numer, 0.9)
-        print '95% CL  numinator', poisson_limits(numer, 0.95)
-        print '99% CL  numinator', poisson_limits(numer, 0.99)
-
-
-        key = raw_input(' next, ratio hist')
-        plt.hist(ratio, bins=30, alpha=0.5, normed=True)
-        plt.plot(ratio,cum)
-        key = raw_input()
-
+                     
+                              
     
-    return np.interp(0.5-cl/2., cum, ratio), np.interp(.5+cl/2., cum, ratio)
+    
+    
+
+
