@@ -210,4 +210,5 @@ def rtext(line,x,y,s, **kwargs):
         derivative = (a1 + 2*a2*x + 3*a3*x**2)
         derivative /= ax.get_data_ratio()
         r = np.arctan( derivative )
+        
     return pylab.text(x, y, s, rotation=np.rad2deg(r), **kwargs)
