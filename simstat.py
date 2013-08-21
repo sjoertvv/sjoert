@@ -177,8 +177,8 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, silent=False):
     return xx, yy, yy_err
 
 
-def binthem(x, y, bins=10,
-            cl=0.9, poisson=False, std=False, sqrtN=True, use_mean=False,
+def binthem(x, y, bins=10,use_mean=False,use_sum=False,
+            cl=0.9, poisson=False, std=False, sqrtN=True, 
             silent=False):
     '''
     bin x,y using bins in x-direction
@@ -199,6 +199,7 @@ def binthem(x, y, bins=10,
      - std=False  use standard deviation / sqrt(N) to compute uncertainty (ie, symtric errorbars)
      - sqrtN=True  set to False to use std only
      - use_mean=False  use mean (median is default) 
+     - use_sum=False sum bin content
      - silent  shutup
     '''
 
@@ -222,6 +223,8 @@ def binthem(x, y, bins=10,
 
             if use_mean:
                 ymid[0,i] = np.mean(y_arr)
+            elif use_sum:
+                ymid[0,i] = np.sum(y_arr)
             else:
                 ymid[0,i] = np.median(y_arr)
 
@@ -251,8 +254,8 @@ def cdf_match(x,y, new_len=None):
     retrun subset of y + index to this subset 
     this subset is constructed to have the same 
     cummulative distribution function as x
-    so len(y)>len(x) is assumed (otherwise we greatly oversample y)
-
+    so len(y)>len(x) is required 
+    
     optional input: 
     - new_len=N, make length of y equal to N 
     ''' 
@@ -263,11 +266,28 @@ def cdf_match(x,y, new_len=None):
     # drawn new y 
     x_cdf = np.sort(x), np.linspace(0, 1, len(x))
     y_pref =  np.interp(np.random.rand(new_len), x_cdf[1], x_cdf[0])
+
     # get index to true y
-    y_idx = np.round(np.interp(y_pref, np.sort(y), np.arange(len(y))))
-    y_idx = np.array(y_idx, dtype=np.int)
+    #y_idx = np.round(np.interp(y_pref, np.sort(y), np.arange(len(y))))
+    #y_idx = np.array(y_idx, dtype=np.int)
+    #y_out = y[y_idx]
+    
+    y_out = np.zeros(new_len)
+    y_idx = np.zeros(new_len, dtype=np.int)
+    y_crop = y
+    
+    for i in range(new_len): 
+        idx = np.int(np.floor(np.interp(y_pref[i], np.sort(y_crop), np.arange(len(y_crop)))))
+        y_out[i] = y_crop[np.argsort(y_crop)[idx]]
+        y_crop = np.delete(y_crop, idx)
+
+    for i in range(new_len): 
+        i_ori  = np.where(y==y_out[i])[0]
+        y_idx[i] = i_ori[np.int(np.random.rand()*len(i_ori))]
+
+        
     # conver to int and return new y array
-    return  y[y_idx], y_idx
+    return  y_out, y_idx
     
                      
                               

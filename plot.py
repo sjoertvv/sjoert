@@ -182,3 +182,32 @@ def bovy_dens2d(x,y, *args,**kwargs):
 
     return hh_2d
     
+def rtext(line,x,y,s, **kwargs):
+    '''
+    add text to line
+    rtext(line,x,y,s, **kwargs)
+
+    input line argument is ax.lines[0] (and ax = plt.gca())
+    
+    taken from http://stackoverflow.com/questions/17252790/matplotlib-adding-text-with-more-than-one-line-adding-text-that-can-follow-the
+    '''
+    from scipy.optimize import curve_fit
+    xdata,ydata = line.get_data()
+    dist = np.sqrt((x-xdata)**2 + (y-ydata)**2)
+    dmin = dist.min()
+    TOL_to_avoid_rotation = 0.3
+    if dmin > TOL_to_avoid_rotation:
+        r = 0.
+    else:
+        index = dist.argmin()
+        xs = xdata[ [index-2,index-1,index,index+1,index+2] ]
+        ys = ydata[ [index-2,index-1,index,index+1,index+2] ]
+        def f(x,a0,a1,a2,a3):
+            return a0 + a1*x + a2*x**2 + a3*x**3
+        popt, pcov = curve_fit(f, xs, ys, p0=(1,1,1,1))
+        a0,a1,a2,a3 = popt
+        ax = pylab.gca()
+        derivative = (a1 + 2*a2*x + 3*a3*x**2)
+        derivative /= ax.get_data_ratio()
+        r = np.arctan( derivative )
+    return pylab.text(x, y, s, rotation=np.rad2deg(r), **kwargs)
