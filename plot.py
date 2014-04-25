@@ -7,7 +7,8 @@ try:
      import bovy_plot
 except ImportError:
      dummy = 'No dens2 wrappers this time'
-
+import numpy as np
+     
 from matplotlib import rc
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
@@ -23,7 +24,7 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
          xtick_major_size=4,ytick_major_size=4,
          subplot_bottom=0.16, subplot_top=.90,
          subplot_left=0.15,subplot_right=0.95,
-         golden=False):
+         golden=False, usetex=True):
     """
     NAME:
        init
@@ -49,33 +50,33 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
        2009-12-23 - Written - Bovy (NYU)
        2010-01-23 - New defauts more options - Sjoert
     """
-
+    
     if golden:
         fig_height=fig_width/1.6180
-    
-    #    rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-    rc('font',**{'family':'serif','serif':['Times']})
-    rc('text', usetex=True)
-    plt.minorticks_on()
+        rc('font',**{'family':'serif','serif':['Times']})    
+    else: 
+        rc('font',**{'family':'sans-serif','sans-serif':['Helvetica','Bitstream Vera Sans', 'sans-serif']})
+
+    rc('text', usetex=usetex)
     
     plt.close()
     fig_size =  [fig_width,fig_height]
-    params = {'backend': 'ps',
-              'axes.labelsize': axes_labelsize,
-              'text.fontsize': text_fontsize,
-              'legend.fontsize': legend_fontsize,
-              'xtick.labelsize':xtick_labelsize,
-              'ytick.labelsize':ytick_labelsize,
-              'figure.figsize': fig_size,
-              'xtick.major.size' : xtick_major_size,
-              'ytick.major.size' : ytick_major_size,
-              'xtick.minor.size' : xtick_minor_size,
-              'ytick.minor.size' : ytick_minor_size,
-              'figure.subplot.bottom':subplot_bottom,
-              'figure.subplot.right':subplot_right,
-              'figure.subplot.left':subplot_left,
-              'figure.subplot.top':subplot_top}
-
+    params = { 'backend':'ps',
+       'axes.labelsize': axes_labelsize,
+       'text.fontsize': text_fontsize,
+       'legend.fontsize': legend_fontsize,
+       'xtick.labelsize':xtick_labelsize,
+       'ytick.labelsize':ytick_labelsize,
+       'figure.figsize': fig_size,
+       'xtick.major.size' : xtick_major_size,
+       'ytick.major.size' : ytick_major_size,
+       'xtick.minor.size' : xtick_minor_size,
+       'ytick.minor.size' : ytick_minor_size,
+       'figure.subplot.bottom':subplot_bottom,
+       'figure.subplot.right':subplot_right,
+       'figure.subplot.left':subplot_left,
+       'figure.subplot.top':subplot_top}
+    
     plt.rcParams.update(params)
     rc('text.latex', preamble=r'\usepackage{amsmath}') 
     #rc('text.latex', preamble='\usepackage{sfmath}')
@@ -182,7 +183,7 @@ def bovy_dens2d(x,y, *args,**kwargs):
 
     return hh_2d
     
-def rtext(line,x,y,s, **kwargs):
+def rtext(line,x,y,s, golden=False, **kwargs):
     '''
     add text to line
     rtext(line,x,y,s, **kwargs)
@@ -206,9 +207,13 @@ def rtext(line,x,y,s, **kwargs):
             return a0 + a1*x + a2*x**2 + a3*x**3
         popt, pcov = curve_fit(f, xs, ys, p0=(1,1,1,1))
         a0,a1,a2,a3 = popt
-        ax = pylab.gca()
+        ax = plt.gca()
         derivative = (a1 + 2*a2*x + 3*a3*x**2)
         derivative /= ax.get_data_ratio()
         r = np.arctan( derivative )
+
+    rot = np.rad2deg(r)
+    if golden: 
+        rot /= 1.6180
         
-    return pylab.text(x, y, s, rotation=np.rad2deg(r), **kwargs)
+    return plt.text(x, y, s, rotation=rot, **kwargs)

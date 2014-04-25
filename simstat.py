@@ -8,11 +8,13 @@ from matplotlib import pyplot as plt
 import scipy.stats.distributions as pydist
 import time
 
-def Gauss(x, mu=0, sigma=1):
+def Gauss(x, mu=0, sigma=1, fwhm=None):
     '''
     Gaussian probablity distribution
     P = Gauss(x, mu=0, sigma=1)
     '''
+    if fwhm is not None: 
+        sigma = 0.5 * fwhm / np.sqrt(2*np.log(2))
     return 1/(sigma*np.sqrt(2*np.pi)) * np.exp(-0.5 * (x-mu)**2 / (sigma**2) )
 
 def wmean(d, ivar):
@@ -59,7 +61,7 @@ def poisson(actual, mean):
     '''
     return pydist.poisson.pmf(actual,mean)
 
-def poisson_limits(n_i, conf):
+def poisson_limits(n_i, conf, silent=False):
     '''
     NAME:
     IM_POISSON_LIMITS()
@@ -98,7 +100,7 @@ def poisson_limits(n_i, conf):
         return -1.0
 
     if n_i == 0:
-        print 'poisson_limits:: n_i==0, returning [0,2.4]'
+        if not(silent): print 'poisson_limits:: n_i==0, returning [0,2.4]'
         return np.array([0.,2.4])
     
     

@@ -283,3 +283,128 @@ def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
         f.writelines('\n')
     f.close()
     
+
+def col_formatter(rcol, prec=7):
+    '''
+    helper function for rec2cds
+    '''
+    ndex = np.ceil(np.log10(max(abs((rcol)))))
+    if np.isinf(ndex):
+        ndex = 0 # all elements are zero 
+    else: 
+        ndex = int(ndex)
+        
+    sign_count = (min(rcol)<0)*1
+    if np.issubdtype((rcol[0]), int) or type(rcol[0])==bool: 
+        n_dig = max(1, ndex)+sign_count
+        formatter = str(n_dig)
+    else: 
+        # for very large or small number use scintific notation 
+        if (-ndex > (prec-3)) or (ndex>prec): 
+            n_dig = prec+prec+sign_count+1
+            formatter = '.'+str(int(prec))+'e'
+        else: 
+            n_dig = max(1,ndex)+sign_count+1+prec
+            formatter = str(n_dig)+'.'+str(int(prec))+'f'
+
+    ss='{0:'+formatter+'}' # more save: length of output string
+    return formatter, len(ss.format(rcol[0]))
+
+
+def rec2cds(rec, filename='', precision=None, unit=None, explanation=None):
+    '''
+    >> rec2cds(rec, filename='', precision=None, unit=None, explanation=None):
+
+    convert records array to something like a CDS (fixed width) table
+
+    optional input: 
+     - precision: precision for floats (type: dictionary with column names or float)
+     - unit, units of columns (type: dictionary)
+     - explanation: describtion of columns, max 16 char  (type: dictionary)
+    '''
+    
+    ncols = len(rec.dtype)
+    formatter = np.repeat('__.__', ncols)
+    n_dig = np.repeat(0, ncols)
+
+    # same for all
+    if np.isscalar(precision): 
+        print 'using '+str(precision), ' digits for all columns'
+        for i, col in enumerate(rec.dtype.names):
+            formatter[i], n_dig[i] =  col_formatter(rec[col], prec=precision)
+            #print col, '\t', n_dig[i], formatter[i]
+
+    # dict for each col
+    elif type(precision) == dict:
+        for i, col in enumerate(rec.dtype.names):
+            try: 
+                prec = precision[col]
+            except KeyError: 
+                prec=7 
+            formatter[i], n_dig[i] =  col_formatter(rec[col], prec=prec)
+            #print col, '\t', n_dig[i], formatter[i]
+
+    # fixed 7 four digit precision if no input given
+    else:
+        print 'using 7 digits for as default precision for floats'
+        for i, col in enumerate(rec.dtype.names):
+            formatter[i], n_dig[i] =  col_formatter(rec[col], prec=7)
+            #print col, '\t', n_dig[i], formatter[i]
+
+    # write, to terminal or file
+    if filename: 
+        print 'writing to', filename
+        f = open(filename, 'w')
+
+    # make the header:
+    nbit = 1
+    for i, col in enumerate(rec.dtype.names):
+
+        # bits
+        ss='{0:4.0f}-{1:4.0f}  '.format(nbit, nbit+n_dig[i])
+
+        # units
+        if unit: 
+            try:
+                ss+='{0:9} '.format(unit[col])
+            except KerError:
+                 ss+='{0:9} '.format('')
+        # label
+        ss+='{0:15} '.format(col)
+
+        # explanation
+        if explanation: 
+            try:
+                ss+='{0:35}'.format(explanation[col])
+            except KerError:
+                 ss+='{0:35}'.format('')
+        
+        print ss         
+        if filename:
+            f.writelines(ss+'\n')
+        
+        nbit+=n_dig[i]+1
+            
+    # print body
+    if filename: 
+        f.writelines('\n')
+
+    print ''
+    
+    for l, r in enumerate(rec):         
+        line = ''
+        for i, col in enumerate(rec.dtype.names):
+            ss = '{0:'+formatter[i]+'} '
+            line+=ss.format(r[col])
+        if filename: 
+            f.writelines(line+'\n')
+            if np.mod(l, len(rec)/10)==0:
+                print line
+        else: 
+            if np.mod(l, len(rec)/10)==0:
+                print line
+
+    if filename: 
+        f.close()
+
+    return 

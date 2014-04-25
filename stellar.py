@@ -252,7 +252,6 @@ def lumdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     cosmo['h'] = h
     cosmo['omega_M_0'] = omega_m_0
     cosmo['omega_lambda_0'] = omega_l_0
-    
     return cospy.distance.luminosity_distance(z, **cosmo)*1e6*parsec_in_cm
 
 def comdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
