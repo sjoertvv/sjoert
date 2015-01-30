@@ -567,7 +567,14 @@ def jdtodate(jd):
         return datetime.datetime.utcfromtimestamp(unixtime)
 
 def mjdtoyear(mjd):
-    return datetoyear(mjdtodate(mjd))
+    if np.isscalar(mjd):
+        return datetoyear(mjdtodate(mjd))
+    else:
+        out = np.zeros(len(mjd))
+        for i in range(len(mjd)):
+            out[i] = datetoyear(mjdtodate(mjd[i]))
+        return out
+
 
 def datetoyear(date):
     '''
