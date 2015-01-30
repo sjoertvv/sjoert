@@ -396,36 +396,61 @@ def mag2lum(M, z, nu=None, band=None,
 def tundo(Mr):
     '''
     return black hole mass based on SDSS r-band absolute magnitude
-    from Tundo et al. (2007)  - 2007ApJ...663...53T
+    from Tundo et al. (2007ApJ...663...53T)
+
+    note, this relation gives ~2 higher masses compared to McConnel & Ma
+
     >> Mbh = tundo(-22)
     '''
     slope = -1.31 / 2.5
     log_mass = (Mr+22)*slope +8.69 
     return 10**log_mass
 
+def MBH_scaling(bulge_mass, scat=0, 
+        do_McConnellMa=True,
+        do_HarningRix=False, 
+        do_KormendyHo=False):
+    '''
+    Container with scaling relations between bulge mass (dynamical or stellar)
+    and black hole mass. Input and output in solar mass (linear scale).
+
+    do_McConnellMa (default):
+        McConnell & Ma (2013), based on stellar mass of the bulge
+
+    do_HarningRix:
+      Harning and Rix (2008) relation with bulge dynamical mass.
+    
+    do_KormendyHo:
+        Kormendy & Ho (2014), Eq. 10, based on fixed K-band M/L
+
+
+    optional input:
+     scat=0.2 to add 0.2 dex scatter (default is zero)
+     
+    '''
+
+    if scat>0:
+        MBH_scat = np.random.normal(0, scat, size=len(bulge_mass))
+    else:   
+        MBH_scat = 0.
+    
+    if do_KormendyHo:
+        norm = 8.69 # +/- 0.05
+        slope = 1.16 # +/- 0.08
+    elif do_HarningRix:
+        norm = 8.20 # +/- 0.1
+        slope = 1.12 # +/- 0.06
+    elif do_McConnellMa:
+        norm = 8.46 
+        slope = 1.05
+
+    return 10**(norm + MBH_scat + slope* np.log10(bulge_mass/1e11))
+
 
 # --- 
-# some filters and functions
-sdss_l = np.array([3543, 4770, 6231, 7625, 9134]) # SDSS filter in A
-
-def sdss_nu(k):
-    return 3e8 / (sdss_l[k]*1e-10)
-
-def sdss_lambda(k):
-    return sdss_l[k]
-
-def _get_nu(band):
-    nu = None
-    if band == 'FUV': nu = 3e8 / (1528 *1e-10)
-    if band == 'NUV': nu = 3e8/ (2271 *1e-10)
-    if band == 'u': nu = sdss_nu(0)
-    if band == 'g': nu = sdss_nu(1)
-    if band == 'r': nu = sdss_nu(2)
-    if band == 'i': nu = sdss_nu(3)
-    if band == 'z': nu = sdss_nu(4)
-    if not(nu):
-        print 'please use band=[FUV, ..., z]'
-    return nu
+# some filters and functions (moved to sdss.py)
+from sdss import sdss_nu, sdss_lambda
+from sdss import get_nu as _get_nu
 
 
 def gamma2beta(gamma):
@@ -439,6 +464,20 @@ def Doppler(gamma=5, i_obs=0.1):
     
     beta = gamma2beta(gamma)
     return 1/(gamma * (1-beta * np.cos(i_obs)) )
+
+def Planck(nu=None, T=None):
+    '''
+    return black body intensity (power per unit area per solid angle per frequency)
+    '''
+    if (nu is None) or (T is None):
+        print 'ERROR, please give input: '
+        print 'Planck(nu=nu, T=T)'
+        return np.nan
+    
+    h = 6.6261e-27
+    c = 2.9979e10
+    k = 1.3807e-16
+    return 2*h*c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
 
 def Rs(Mbh):
     '''
@@ -510,3 +549,43 @@ def schechter(M, h=0.72, paper='Blanton03'):
     return 0.4*np.log(10) * psi_s * 10.0**(0.4*(alpha+1)*(M_s-M) ) * \
         np.exp( -10.0**( 0.4*(M_s-M) ) )
     
+
+'''
+next three functions from starutil_numpy of Dustin Lang
+'''
+import datetime
+from datetime import datetime as dt
+import time
+
+def mjdtojd(mjd):
+        return mjd + 2400000.5
+def mjdtodate(mjd):
+        jd = mjdtojd(mjd)
+        return jdtodate(jd)
+def jdtodate(jd):
+        unixtime = (jd - 2440587.5) * 86400. # in seconds
+        return datetime.datetime.utcfromtimestamp(unixtime)
+
+def mjdtoyear(mjd):
+    return datetoyear(mjdtodate(mjd))
+
+def datetoyear(date):
+    '''
+    import is datetime object
+    from http://stackoverflow.com/questions/6451655/python-how-to-convert-datetime-dates-to-decimal-years
+    '''
+
+    def sinceEpoch(date): # returns seconds since epoch
+        return time.mktime(date.timetuple())
+    s = sinceEpoch
+
+    year = date.year
+    startOfThisYear = dt(year=year, month=1, day=1)
+    startOfNextYear = dt(year=year+1, month=1, day=1)
+
+    yearElapsed = s(date) - s(startOfThisYear)
+    yearDuration = s(startOfNextYear) - s(startOfThisYear)
+    fraction = yearElapsed/yearDuration
+
+    return date.year + fraction
+
