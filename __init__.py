@@ -16,5 +16,6 @@ import plot
 import misc
 #import catalogs should become seperate rep
 import latex
+import sdss
 
 __all__ = ['io','rec','dirs','cutout','html', 'stellar','catalogs','simstat','plot','misc', 'latex']

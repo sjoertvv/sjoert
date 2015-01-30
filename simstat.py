@@ -131,7 +131,7 @@ def poisson_limits(n_i, conf, silent=False):
     return np.array([limit_dn,limit_up])
 
 
-def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, silent=False):
+def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, return_zero=False, silent=False):
     '''
     make scatter points form array (eg, for luminosity function)
     >> xx, yy, yy_err = his2scat(arr, bins=10, range=None, conv=0.8413)
@@ -157,12 +157,16 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, silent=False):
         print 'number in bins', hh[0]
     ipos= np.where(hh[0]>0)[0]
 
+    if (len(ipos) != len(hh[0])) and (return_zero==False):
+        if not(silent):
+            print 'warning we have empty bins! skipping these'
+    else:           
+        ipos = np.arange(len(hh[0]))
     xx = np.zeros(len(ipos))
     yy = np.zeros(len(ipos))
     yy_err = np.zeros((2,len(ipos)))
-    if len(ipos) != len(hh[0]):
-        if not(silent):
-            print 'warning we have empty bins! skipping these'
+
+
 
     for i, ip in enumerate(ipos):
 
@@ -179,23 +183,25 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, silent=False):
     return xx, yy, yy_err
 
 
-def binthem(x, y, bins=10,use_mean=False,use_sum=False,
+def binthem(x, y, bins=10, range=[], use_mean=False,use_sum=False,
             cl=0.9, poisson=False, std=False, sqrtN=True, 
             silent=False):
     '''
-    bin x,y using bins in x-direction
     >> xmid, ymid = binthem(x, y)
+
+    bin parameter y using bins in x-direction
 
     output:
      xmid  (N) the mean value of x for each bin
-     ymid  (3,N) the median/mean value, uncertainty/dispersion 
+     ymid  (3,N) the median/mean/total value, uncertainty/dispersion 
 
     the uncertainty is computed from the values in bin,
     or using std, poisson stat if flags are set 
 
     input:
      - x,y  equal length arrays
-     - bins  number of xbins or array with bins (default is 10)
+     - bins  number of xbins or array with bins (default length is 10)
+     - range=[xmin, xmax] range for the bins (default is [min(x),max(x)])
      - cl=0.9  confidence level for computing the uncertainty
      - poisson=False use Poisson stat to find uncertainty on number in bin
      - std=False  use standard deviation / sqrt(N) to compute uncertainty (ie, symtric errorbars)
@@ -206,14 +212,17 @@ def binthem(x, y, bins=10,use_mean=False,use_sum=False,
     '''
 
     if np.isscalar(bins):
-        x_bins = np.linspace(np.min(x), np.max(x)*1.01, bins)
+        if len(range)==2:
+            x_bins = np.linspace(range[0], range[1], bins)
+        else:
+            x_bins = np.linspace(np.min(x), np.max(x), bins) #removed in 2015: max()*1.01
     else:
         x_bins = bins
 
     xmid = np.zeros(len(x_bins)-1)
     ymid = np.zeros((3,len(x_bins)-1))
 
-    for i in range(len(xmid)):
+    for i in np.arange(len(xmid)):
 
         ibin = np.where((x>=x_bins[i]) & (x<x_bins[i+1]))[0]
 
@@ -245,7 +254,7 @@ def binthem(x, y, bins=10,use_mean=False,use_sum=False,
 
 
         if not silent:
-            print xmid[i], len(ibin), ymid[:,i]
+            print '{0:0.2f} - {1:0.2f}  {2:0.0f}  [{3:0.2f}  {4:0.2f}  {5:0.2f}]'.format(x_bins[i],x_bins[i+1], len(ibin), ymid[0,i], ymid[1,i], ymid[2,i])
 
     return xmid, ymid
 
