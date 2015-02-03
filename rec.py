@@ -113,6 +113,8 @@ def append_field(rec, name, arr, dtype=None):
     newrec[name] = arr
     return newrec
 
+
+
 def append_rows(rec, rows):
     '''
     append rows to recorc array
@@ -149,3 +151,5 @@ def match(a,b):
             ma.append(i)
             
     return np.array(ma),np.array(mb)
+
+
