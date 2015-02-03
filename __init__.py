@@ -17,5 +17,8 @@ import misc
 #import catalogs should become seperate rep
 import latex
 import sdss
+import fits
 
-__all__ = ['io','rec','dirs','cutout','html', 'stellar','catalogs','simstat','plot','misc', 'latex']
+__all__ = ['io','rec','dirs','cutout','html', \
+			'stellar','catalogs','simstat','plot',\
+			'misc', 'latex', 'sdss', 'fits']

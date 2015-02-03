@@ -1,19 +1,30 @@
+'''
+small collection of functions for pyFITS tables
+(see sjoert.io for I/O of FITS files)
+
+'''
 import pyfits
 
-def append_field(orig_hdu, name, data=[], format='D', out_name=''):
-    '''
-    append a field to a FITS table 
+# this will be needed in the future, when STScI stops supporting the stand-alone version
+#from astropy.io import fits as pyfits 
 
-    new_hdu = FITS_append_field(orig_hdu, 'name', data=data)
+def append_field(orig_table, name, data=[], format='D', out_name=''):
+    '''
+    append a field (a column) to a FITS table 
+
+    new_table = append_field(orig_table, 'name', data=data)
 
     optional input 
      - data=[]: rows of the new column
      - format='D', default format is Doubble
      - out_name='', if given we write new FITS table to disk
 
-    note, we assume data is in hdu[1]
+    notes:
+     - we assume data is in hdu[1]
+     - requires pyfits 3.3 or later
     '''
-    orig_table = orig_hdu[1].data
+
+    #orig_table = orig_hdu[1].data
     orig_cols = orig_table.columns
     
     if len(data)==len(orig_table):
@@ -27,4 +38,4 @@ def append_field(orig_hdu, name, data=[], format='D', out_name=''):
     if out_name: 
         new_hdu.writeto(out_name, clobber=True)
     
-    return new_hdu
+    return new_hdu.data

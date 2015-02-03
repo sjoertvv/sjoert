@@ -171,11 +171,14 @@ def rec2fits(rec=None, filename=''):
         print 'give flinename= for output' 
         return
 
+    # try to keep things working for older version of pyFITS
     if pyfits.__version__.split('.')[0]>=3:
+        if pyfits.__version__.split('.')[1]>=3:
+            tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
+        else:
+            tbhdu=pyfits.new_table(rec) # yields DeprecationWarning as of v3.3
 
-       tbhdu=pyfits.new_table(rec)
-
-    # if you have an old Pyfits,
+    # if you have an very old Pyfits,
     # we have to things the messy way       
     else:
         clist = []
@@ -196,7 +199,7 @@ def rec2fits(rec=None, filename=''):
         tbhdu=pyfits.new_table(cols)
          
     print 'writing:', filename
-    tbhdu.writeto(filename, clobber=1)
+    tbhdu.writeto(filename, clobber=True)
     return
 
     
