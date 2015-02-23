@@ -261,14 +261,17 @@ def binthem(x, y, bins=10, range=[], use_mean=False,use_sum=False,
 
 def cdf_match(x,y, new_len=None):
     '''
-    y, idx = cdf_match(x,y)
-    retrun subset of y + index to this subset 
-    this subset is constructed to have the same 
-    cummulative distribution function as x
-    so len(y)>len(x) is required 
+    >>> y_sampled, idx = cdf_match(x,y, oversample=False)
+    
+    Retrun subset of y, plus idx to this subset. 
+    The subset is constructed to have the same 
+    cummulative distribution function as x.
+    Note that for default operation, we do not
+    oversample. So len(y)>>len(x) is assumed. 
     
     optional input: 
     - new_len=N, make length of y equal to N 
+    - oversample=False, allow multiple entries of y in y_sampled. 
     ''' 
 
     if new_len is None:
@@ -290,14 +293,14 @@ def cdf_match(x,y, new_len=None):
     for i in range(new_len): 
         idx = np.int(np.floor(np.interp(y_pref[i], np.sort(y_crop), np.arange(len(y_crop)))))
         y_out[i] = y_crop[np.argsort(y_crop)[idx]]
-        y_crop = np.delete(y_crop, idx)
+        if not(oversample):
+            y_crop = np.delete(y_crop, idx)
 
     for i in range(new_len): 
         i_ori  = np.where(y==y_out[i])[0]
-        y_idx[i] = i_ori[np.int(np.random.rand()*len(i_ori))]
+        y_idx[i] = i_ori[np.int(np.random.rand()*len(i_ori))] # account for non-unique input or output
 
         
-    # conver to int and return new y array
     return  y_out, y_idx
     
                      
