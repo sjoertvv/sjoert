@@ -1,5 +1,5 @@
 '''
-setup matplotlib for IDL-style high quality plots
+setup matplotlib for high-quality plots
 '''
 import re
 import os
