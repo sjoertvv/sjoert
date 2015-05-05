@@ -183,7 +183,8 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, return_zero=Fa
     return xx, yy, yy_err
 
 
-def binthem(x, y, bins=10, range=[], use_mean=False,use_sum=False,
+def binthem(x, y, yerr=None, bins=10, range=[], 
+            use_mean=False,use_sum=False, use_wmean=False,
             cl=0.9, poisson=False, std=False, sqrtN=True, 
             silent=False):
     '''
@@ -193,14 +194,15 @@ def binthem(x, y, bins=10, range=[], use_mean=False,use_sum=False,
 
     output:
      xmid  (N) the mean value of x for each bin
-     ymid  (3,N) the median/mean/total value, uncertainty/dispersion 
-
+     ymid  (4,N) the median/mean/total value, uncertainty/dispersion, number in bin 
+    optional 
     the uncertainty is computed from the values in bin,
     or using std, poisson stat if flags are set 
 
     input:
      - x,y  equal length arrays
      - bins  number of xbins or array with bins (default length is 10)
+    optional input:
      - range=[xmin, xmax] range for the bins (default is [min(x),max(x)])
      - cl=0.9  confidence level for computing the uncertainty
      - poisson=False use Poisson stat to find uncertainty on number in bin
@@ -208,8 +210,14 @@ def binthem(x, y, bins=10, range=[], use_mean=False,use_sum=False,
      - sqrtN=True  set to False to use std only
      - use_mean=False  use mean (median is default) 
      - use_sum=False sum bin content
+     - use_wmean  compute weighted mean, requires yerr= input
      - silent  shutup
     '''
+
+    if use_wmean:
+        if yerr is None: 
+            print 'ERROR, please give yerr= input when wmean=True'
+            return
 
     if np.isscalar(bins):
         if len(range)==2:
@@ -231,11 +239,15 @@ def binthem(x, y, bins=10, range=[], use_mean=False,use_sum=False,
         if len(ibin)>0:
     
             y_arr = y[ibin]
+            ymid[3,i] = len(ibin)
 
             if use_mean:
                 ymid[0,i] = np.mean(y_arr)
             elif use_sum:
                 ymid[0,i] = np.sum(y_arr)
+            elif use_wmean:
+                y_arr_err = yerr[ibin]
+                ymid[0,i] = wmean(y_arr, 1/y_arr_err*2)
             else:
                 ymid[0,i] = np.median(y_arr)
 
@@ -243,9 +255,11 @@ def binthem(x, y, bins=10, range=[], use_mean=False,use_sum=False,
                 if std:
                     ymid[[1,2],i] = np.std(y_arr)
                     if sqrtN:
-                        ymid[[1,2],i]= ymid[[1,2],i]/ np.sqrt(len(ibin))
+                        ymid[[1,2],i] = ymid[[1,2],i]/ np.sqrt(len(ibin))
                 elif poisson:
                     ymid[[1,2],i] = np.abs(poisson_limits(np.sum(y[ibin]), cl)/len(ibin)- ymid[0,i])
+                elif use_wmean:
+                    ymid[[1,2],i] = 1/np.sqrt(sum(1/y_arr_err**2))
                 else:
                     y_arrs = np.sort(y_arr)
                     ii = np.arange(len(ibin))
