@@ -225,7 +225,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
         x_bins = bins
 
     xmid = np.zeros(len(x_bins)-1)
-    ymid = np.zeros((3,len(x_bins)-1))
+    ymid = np.zeros((4,len(x_bins)-1))
 
     for i in np.arange(len(xmid)):
 
