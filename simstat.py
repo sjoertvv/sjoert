@@ -192,16 +192,13 @@ def binthem(x, y, yerr=None, bins=10, range=[],
 
     bin parameter y using bins in x-direction
 
-    output:
-     xmid  (N) the mean value of x for each bin
-     ymid  (4,N) the median/mean/total value, uncertainty/dispersion, number in bin 
-    optional 
-    the uncertainty is computed from the values in bin,
-    or using std, poisson stat if flags are set 
+    output:  
+     - xmid  (N) the mean value of x for each bin  
+     - ymid  (4,N) the median/mean/total value, uncertainty/dispersion, number in bin. 
 
     input:
      - x,y  equal length arrays
-     - bins  number of xbins or array with bins (default length is 10)
+     - bins  number of xbins or array with bins (default is 10)
     optional input:
      - range=[xmin, xmax] range for the bins (default is [min(x),max(x)])
      - cl=0.9  confidence level for computing the uncertainty
