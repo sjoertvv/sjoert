@@ -100,7 +100,7 @@ def table(cols, names=None, units=None, ndeci=1, \
     '''
     latex tabular from columns
 
-    >> table([[42,2e8], ['spam', 'rabbit']], names=['numbers', 'names'])
+    >> table([[42,2e8], names=['spam', 'rabbit']], units=['#', things'])
      \hline 
      numbers & names \\
      \hline \hline
@@ -170,20 +170,18 @@ def table(cols, names=None, units=None, ndeci=1, \
     for i in range(len(cols[0])):
 
         cc = cols[0][i]
-        if np.issubdtype(type(cc),str):
-            ss = cc
-        else:
-           ss = f2latex(cc)
-           
-        for j in np.arange(1,len(cols)):
+        ss =''
+        for j in np.arange(0,len(cols)):
             cc = cols[j][i]
             if np.issubdtype(type(cc), str):
                 ss +=' & '+ cc
-            elif np.issubdtype(type(cc), int):
-                 ss += ' & '+str(cc)            
+            elif ndeci[j]==0:
+                ss += ' & {0:0.0f} '.format(cc)
+            elif np.issubdtype(type(cc), int): 
+                ss += ' & {0:0.0f} '.format(cc)    
             else:
-                ss += ' & '+f2latex(cc, nd=ndeci[i])
-                            
+                ss += ' & '+f2latex(cc, nd=ndeci[j])
+        ss = ss[2:]           
         ss += '\\\\'
         if filename:
             f.writelines(ss+'\n')
