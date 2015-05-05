@@ -26,18 +26,29 @@ NEDdir = sjoert.dirs.catdir+'NED/'
 
 #NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-datasearch?search_type=Photo_id&objid=80631&objname=_SOURCE_&img_stamp=YES&hconst=73.0&omegam=0.27&omegav=0.73&corr_z=1&of=table"' # doesn't work because of objid key
 NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?objname=_SOURCE_&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO"'
+NEDurl_radec = '''http://ned.ipac.caltech.edu/cgi-bin/objsearch?search_type=Near+Position+Search&in_csys=Equatorial&in_equinox=J2000.0&lon=_RA_d&lat=_DEC_d&radius=_RAD_&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&z_constraint=Unconstrained&z_value1=&z_value2=&z_unit=z&ot_include=ANY&nmp_op=ANY&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=Distance+to+search+center&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO'''
 
-def get_NED_name(name, NEDdir=NEDdir):
+def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=False):
     '''
     download or read NED page, return NED name of the galaxy
     >> get_NED_name(name, NEDdir=NEDdir)
+    >> get_NED_name(ra=130,dec=-12, rad=0.1/60, NEDdir=NEDdir)
     '''
-    local_name = name.strip().replace(' ', '_')
+    
+    if name is not None:
+        local_name = name.strip().replace(' ', '_')
+    else:
+        local_name = sjoert.stellar.iau_name(ra, dec)
+    
     fname  = NEDdir+local_name+'.html'
+    
     if not(os.path.isfile(fname)):
         print fname
         print 'not on disk, sendig query to NED'
-        download_NED(name, local_name, NEDdir=NEDdir)
+    
+    if not(os.path.isfile(fname)) or redo:
+        download_NED(name=name, ra=ra,dec=dec, rad=rad, local_name=local_name, NEDdir=NEDdir)
+
         time.sleep(0.5)
         
     return read_NED_mainpage(local_name)
@@ -76,7 +87,7 @@ def get_NED_SED(name, NEDdir=NEDdir):
     nu, flux = read_NED_SEDpage(SEDpage_name, NEDdir=NEDdir)
     return nu, flux
 
-def download_NED(name=None, local_name=None,
+def download_NED(name=None, ra=None, dec=None, rad=None, local_name=None,
                  SEDpage_name=None, NEDdir=NEDdir, debug=False):
     '''
     download summary page and SED page from NED
@@ -85,15 +96,25 @@ def download_NED(name=None, local_name=None,
     may want to add add ra=, dec= options later
     '''
 
+
     if not(local_name):
         local_name=name.replace(' ','_')
     #if not(SEDpage_name):
     #     local_name+'_SED'
 
     # get the main NED page
-    html_name = name.strip().replace(' ','_')
-    command_line = 'wget '+NEDurl.replace('_SOURCE_', html_name)+ \
-          ' -O '+NEDdir+local_name+'.html'
+    if name is not None: 
+        html_name = name.strip().replace(' ','_')
+        command_line = "wget '"+NEDurl.replace('_SOURCE_', html_name)+ \
+          "' -O "+NEDdir+local_name+'.html'
+    else:
+        if rad is None: 
+            rad = .1/60. 
+
+        command_line = "wget '"+NEDurl_radec.replace('_RA_', str(ra)[0:9]).replace('_DEC_', str(dec)[0:9]).replace('_RAD_', str(rad*60))+ \
+          "' -O "+NEDdir+local_name+'.html'
+
+    print command_line
     args = shlex.split(command_line)
 
     if debug:
