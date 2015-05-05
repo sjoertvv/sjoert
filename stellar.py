@@ -295,6 +295,8 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
      - z:  reshift
      - nu in Hz, or choose from band=[FUV, NUV, u,g,r,i,z]
      - cm if set, redshift is ignored
+
+    note, no K-correction
     '''
     if not(nu) and not(band):
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
@@ -304,7 +306,39 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
     if cm is None: cm = lumdis(z, h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0)
 
     return L / (nu * 4*np.pi * cm**2) *1e23 
+
+def lum2mag(L, z=None, cm=None, nu=None, band=None,
+                     h=.72, omega_m_0=.3, omega_l_0=.7):
+    '''
+    erg/s to AB mag
+    >> flux = lum2flux(L, z, nu=1.4e9) # in Jy
+    input: 
+     - L: luminsity in erg/s
+     - z:  reshift
+     - nu in Hz, or choose from band=[FUV, NUV, u,g,r,i,z]
+     - cm if set, redshift is ignored
+
+    note, no K-correction 
+    '''
+
+    return flux2mag(lum2flux(L, z=z, cm=cm, nu=nu, band=band,
+                     h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0))
+
+
+def flux2nuFnu(S, nu):
+    '''
+    nuFnu = flux2nuFnu(S, nu)
+    Jansky to erg/s/cm^2
+    '''
+    return S*1e-23*nu
           
+def mag2nuFnu(mag, nu):
+    '''
+    nuFnu = mag2nuFnu(ABmag, nu)
+    AB mag to erg/s/cm^2
+    '''
+    return mag2flux(mag)*1e-23*nu
+
 def flux2lum(S, z=None, cm=None, nu=None, band=None,
                      h=.72, omega_m_0=.3, omega_l_0=.7):
     '''
@@ -338,6 +372,18 @@ def dismod(z, h=.72, omega_m_0=.3, omega_l_0=.7):
 
 
 abs_const = 4*np.pi* 3631e-23 *  (10*parsec_in_cm)**2
+
+def abs2mag(M, z=None):
+    '''
+    absolute AB manitude to nu*L_nu
+    >> mag = abs2flux(-12, z, nu=1e15)
+
+    input nu in Hz, or choose from band=[FUV, NUV, u,g,r,i,z]
+    '''
+    lum=abs2lum(M, nu=1.)
+
+    return lum2mag(lum, z=z, nu=1.)
+
 
 def abs2lum(M, nu=None, band=None):
     '''
@@ -465,6 +511,22 @@ def Doppler(gamma=5, i_obs=0.1):
     beta = gamma2beta(gamma)
     return 1/(gamma * (1-beta * np.cos(i_obs)) )
 
+# some constants (cgs)
+h = 6.6261e-27 # Planck's
+c = 2.9979e+10 # Speed of light
+k = 1.3807e-16 # Boltzman's
+e = 1.6022e-12 # Electronvolt 
+def ev2t(ev):
+    '''
+    convert black body temp in eV to temperature
+    '''
+    return ev*e/k
+def ev2nu(ev):
+    '''
+    convert black body temp in eV to temperature
+    '''
+    return ev*e/h
+
 def Planck(nu=None, T=None):
     '''
     return black body intensity (power per unit area per solid angle per frequency)
@@ -474,10 +536,7 @@ def Planck(nu=None, T=None):
         print 'Planck(nu=nu, T=T)'
         return np.nan
     
-    h = 6.6261e-27
-    c = 2.9979e10
-    k = 1.3807e-16
-    return 2*h*c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
+    return 2*h/c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
 
 def Rs(Mbh):
     '''
@@ -487,6 +546,18 @@ def Rs(Mbh):
     '''
     return 2*Mbh*2e30*6.7e-11/9e16 *1e2 # cm
 
+def Msigma(sigma):
+    '''
+    Kormendy and Ho (2014) M-sigma relation 
+    give sigma in km/s, return Mbh in Msun
+    '''
+    return 10**8.5*(sigma/200.)**4.4 # in Msun
+
+def BH_influence(sigma):
+    '''
+    give sigma in km/s, return sphere of influence in cm
+    '''
+    return 6.674e-8 * 1.989e33 * Msigma(sigma) / (sigma*1e5)**2 # this is propto sigma^2.4
 
 def schechter(M, h=0.72, paper='Blanton03'):
     '''
@@ -548,7 +619,16 @@ def schechter(M, h=0.72, paper='Blanton03'):
     
     return 0.4*np.log(10) * psi_s * 10.0**(0.4*(alpha+1)*(M_s-M) ) * \
         np.exp( -10.0**( 0.4*(M_s-M) ) )
-    
+  
+
+def deVau(r, r_mid=1):
+    '''
+    De Vaucouleurs
+    >> I = DeVau(r, r50)
+    '''
+
+    return np.exp(-7.669*(r/r_mid)**(1/4.)-1)
+
 
 '''
 next three functions from starutil_numpy of Dustin Lang
@@ -556,7 +636,8 @@ next three functions from starutil_numpy of Dustin Lang
 import datetime
 from datetime import datetime as dt
 import time
-
+def jdtomjd(jd):
+        return jd - 2400000.5
 def mjdtojd(mjd):
         return mjd + 2400000.5
 def mjdtodate(mjd):
@@ -565,7 +646,6 @@ def mjdtodate(mjd):
 def jdtodate(jd):
         unixtime = (jd - 2440587.5) * 86400. # in seconds
         return datetime.datetime.utcfromtimestamp(unixtime)
-
 def mjdtoyear(mjd):
     if np.isscalar(mjd):
         return datetoyear(mjdtodate(mjd))
@@ -574,6 +654,13 @@ def mjdtoyear(mjd):
         for i in range(len(mjd)):
             out[i] = datetoyear(mjdtodate(mjd[i]))
         return out
+def timedeltatodays(dt):
+        return dt.days + (dt.seconds + dt.microseconds/1e6)/86400.
+def datetomjd(d):
+        d0 = datetime.datetime(1858, 11, 17, 0, 0, 0)
+        dt = d - d0
+        # dt is a timedelta object.
+        return timedeltatodays(dt)
 
 
 def datetoyear(date):

@@ -133,6 +133,52 @@ def _add_ticks():
 import scipy as sc
 from scipy import special
 
+def density_contours(x,y, levels=[0.95],colors=['k'], bins=[20,20],
+    xrange=None, yrange=None, cmap=None):
+  '''
+  overplot density contours
+  optional input:
+   - xrange, yrange
+   - bins=[20,02]
+   - levels=[0.95], levels are probability masses contained within the contour
+   - colors=['k']
+   - cmap=None : if len(levels) != len(colors), we use the cubehelix_r colormap
+
+  sniplets taken from Jo Bovy's bovy_plot.py
+  '''
+
+  if xrange is None:
+    xrange = [min(x),max(x)]
+  if yrange is None:
+    yrange = [min(y),max(y)]
+  
+  if type(colors) is str:
+    colors = [colors]
+  if type(levels) is float:
+    levels = [levels]
+  
+  if (len(colors) != len(levels)) and (cmap is None):
+    colors=None
+    cmap = 'cubehelix_r'
+  
+  data= sc.array([x,y]).T
+  hist, edges= sc.histogramdd(data,bins=bins,range=[xrange,yrange])
+  X = hist.T
+
+  extent = [edges[0][0], edges[0][-1], edges[1][0], edges[1][-1]]
+  aspect= (xrange[1]-xrange[0])/(yrange[1]-yrange[0])
+
+  #  make umulative 
+  sortindx= sc.argsort(X.flatten())[::-1]
+  cumul= sc.cumsum(sc.sort(X.flatten())[::-1])/sc.sum(X.flatten())
+  cntrThis= sc.zeros(sc.prod(X.shape))
+  cntrThis[sortindx]= cumul
+  cntrThis= sc.reshape(cntrThis,X.shape)
+
+  # plot
+  plt.contour(cntrThis, levels, colors=colors, cmap=cmap, extent=extent, aspect=aspect)
+
+
 
 def bovy_dens2d(x,y, *args,**kwargs):
     '''
