@@ -30,17 +30,29 @@ from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hm
 from numpy import floor, double
 import numpy as np
 
-# some constants
+
+# Some Physical constants (cgs)
+h = 6.6261e-27      # Planck's constant (erg s)
+c = 2.9979e+10      # Speed of light (cm/s)
+k = 1.3807e-16      # Boltzman's (erg/K)
+e = 1.6022e-12      # Electronvolt (erg)
+G = 6.674e-8        # Gravitational (kg m^3 / kg^2/s^2)
+sigma_SB =5.6704e-5 # Stefan-Boltzmann constant (erg/s/cm^2/K^4)
+
+# Some Astro constants
 parsec = 3.08568e18 # cm
 parsec_in_cm = parsec  
-year_in_sec = 31557600.0
-
+Msun = 1.989e33 # gram
+Rsun = 6.96e10   #cm
+ 
+# Conversions
 Mpc2cm = parsec_in_cm *1e6
 cm2Mpc = 1/(parsec_in_cm *1e6)
 deg2rad = np.pi/180.
 rad2deg = 180. / np.pi
 rad2ac = rad2deg*3600
 sqdegonsky = 129600. /np.pi
+year_in_sec = 31557600.
 
 
 def ahav(a):
@@ -285,6 +297,16 @@ def angdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
     return cospy.distance.angular_diameter_distance(z,
                                                     **cosmo)*1e6*parsec_in_cm
 
+def pc2as(z, h=.72, omega_m_0=.3, omega_l_0=.7):
+    '''
+    convert parsec to arcsec
+    >> as = pc2mas(0.1) * 10
+    '''
+    return 1/(angdis(z, h, omega_m_0, omega_l_0)/parsec_in_cm)/np.pi*180*3600
+
+
+
+
 def lum2flux(L, z=None, cm=None, nu=None, band=None,
                      h=.72, omega_m_0=.3, omega_l_0=.7):
     '''
@@ -511,19 +533,15 @@ def Doppler(gamma=5, i_obs=0.1):
     beta = gamma2beta(gamma)
     return 1/(gamma * (1-beta * np.cos(i_obs)) )
 
-# some constants (cgs)
-h = 6.6261e-27 # Planck's
-c = 2.9979e+10 # Speed of light
-k = 1.3807e-16 # Boltzman's
-e = 1.6022e-12 # Electronvolt 
-def ev2t(ev):
+
+def ev2K(ev):
     '''
-    convert black body temp in eV to temperature
+    convert black body temperature from eV to K
     '''
     return ev*e/k
-def ev2nu(ev):
+def ev2Hz(ev):
     '''
-    convert black body temp in eV to temperature
+    convert frequency in eV to Hz
     '''
     return ev*e/h
 
@@ -557,7 +575,7 @@ def BH_influence(sigma):
     '''
     give sigma in km/s, return sphere of influence in cm
     '''
-    return 6.674e-8 * 1.989e33 * Msigma(sigma) / (sigma*1e5)**2 # this is propto sigma^2.4
+    return G * Msun * Msigma(sigma) / (sigma*1e5)**2 # this is propto sigma^2.4
 
 def schechter(M, h=0.72, paper='Blanton03'):
     '''

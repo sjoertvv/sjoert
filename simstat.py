@@ -265,7 +265,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
 
 
         if not silent:
-            print '{0:0.2f} - {1:0.2f}  {2:0.0f}  [{3:0.2f}  {4:0.2f}  {5:0.2f}]'.format(x_bins[i],x_bins[i+1], len(ibin), ymid[0,i], ymid[1,i], ymid[2,i])
+            print '{0:0.2f} - {1:0.2f}  {2:0.0f}  [{3:0.2f}  {4:0.2f}  {5:0.2f}]'.format(x_bins[i],x_bins[i+1], ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i])
 
     return xmid, ymid
 
