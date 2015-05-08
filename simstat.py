@@ -248,20 +248,19 @@ def binthem(x, y, yerr=None, bins=10, range=[],
             else:
                 ymid[0,i] = np.median(y_arr)
 
-            if len(ibin)>1:
-                if std:
-                    ymid[[1,2],i] = np.std(y_arr)
-                    if sqrtN:
-                        ymid[[1,2],i] = ymid[[1,2],i]/ np.sqrt(len(ibin))
-                elif poisson:
-                    ymid[[1,2],i] = np.abs(poisson_limits(np.sum(y[ibin]), cl)/len(ibin)- ymid[0,i])
-                elif use_wmean:
-                    ymid[[1,2],i] = 1/np.sqrt(sum(1/y_arr_err**2))
-                else:
-                    y_arrs = np.sort(y_arr)
-                    ii = np.arange(len(ibin))
-                    ymid[1,i] = np.abs(ymid[0,i]-np.interp( (cl/2.-0.5)*len(ibin), ii, y_arrs))
-                    ymid[2,i] = np.abs(ymid[0,i]-np.interp( (cl/2.+0.5)*len(ibin), ii, y_arrs))
+            if std:
+                ymid[[1,2],i] = np.std(y_arr)
+                if sqrtN:
+                    ymid[[1,2],i] = ymid[[1,2],i]/ np.sqrt(len(ibin))
+            elif poisson and (len(ibin)>1):
+                ymid[[1,2],i] = np.abs(poisson_limits(np.sum(y[ibin]), cl)/len(ibin)- ymid[0,i])
+            elif use_wmean:
+                ymid[[1,2],i] = 1/np.sqrt(sum(1/y_arr_err**2))
+            else:
+                y_arrs = np.sort(y_arr)
+                ii = np.arange(len(ibin))
+                ymid[1,i] = np.abs(ymid[0,i]-np.interp( (cl/2.-0.5)*len(ibin), ii, y_arrs))
+                ymid[2,i] = np.abs(ymid[0,i]-np.interp( (cl/2.+0.5)*len(ibin), ii, y_arrs))
 
 
         if not silent:
