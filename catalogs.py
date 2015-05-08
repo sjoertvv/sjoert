@@ -14,9 +14,18 @@ import re
 import numpy as np
 import string2radec
 import time
-import pyfits
+from astropy.io import fits as pyfits
+from astropy.io import ascii as asciitable
 
 import shlex, subprocess
+
+from stellar import iau_name
+
+try:
+    import sqlcl 
+except ImportError:
+    print 'sqlcl not found, get_SDSS() will fail'
+    print 'get it from: http://skyserver.sdss.org/dr12/en/help/download/sqlcl/pub/sqlcl.py'
 
 
 # change this variable to change the default input to all NED functions
@@ -27,6 +36,80 @@ NEDdir = sjoert.dirs.catdir+'NED/'
 #NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-datasearch?search_type=Photo_id&objid=80631&objname=_SOURCE_&img_stamp=YES&hconst=73.0&omegam=0.27&omegav=0.73&corr_z=1&of=table"' # doesn't work because of objid key
 NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?objname=_SOURCE_&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO"'
 NEDurl_radec = '''http://ned.ipac.caltech.edu/cgi-bin/objsearch?search_type=Near+Position+Search&in_csys=Equatorial&in_equinox=J2000.0&lon=_RA_d&lat=_DEC_d&radius=_RAD_&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&z_constraint=Unconstrained&z_value1=&z_value2=&z_unit=z&ot_include=ANY&nmp_op=ANY&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=Distance+to+search+center&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO'''
+
+SDSSurl_radec = '''"http://skyserver.sdss.org/dr12/en/tools/search/x_radial.aspx?whichway=equitorial&ra=__RA__&dec=__DEC__&radius=__RAD__&min_u=0&max_u=20&min_g=0&max_g=20&min_r=0&max_r=20&min_i=0&max_i=20&min_z=0&max_z=20&format=csv&limit=100000"'''
+
+SDSS_cas=\
+" select p.* \n from photoobjall p, dbo.fgetNearByObjEq(__RA__,__DEC__,__RAD__) n \n where p.objid=n.objid "
+
+
+def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
+    '''
+    >> data = get_SDSS_simple(ra, dec, rad=1, dir='./' name='mydata')
+
+    call the DR12 skyserver with single [ra, dec] and download cvs file
+    input:
+     ra, dec (deg)
+    optional input:
+      radius=1/60. (deg).
+      dir='./' directory for fits file
+      name name for file, if not give we use IAU name of input coords
+      silent=False shut it.
+
+    note, make 1e5 lines are returned, only basic imaging data (magnitudes)
+
+    '''
+    url = SDSSurl_radec.replace('__RA__',str(float(ra))).replace('__DEC__', str(float(dec))).replace('__RAD__',str(rad*60))
+    #cas = SDSS_cas..replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad))
+    
+    if not(name):
+        name = 'SDSS-'+iau_name(ra, dec)+'.csv'
+
+    com = '''curl '''+url+''' > ''' +dir+name
+
+    if not silent: print com
+
+    os.system(com)
+    
+    # the (stupid?) format with two tables
+    f = open(dir+name,'r')
+    lines = ''
+    for l in f.readlines():
+        print l
+        if l == '#Table2\n': 
+            break
+        lines+=l
+
+    data = asciitable.read(lines, delimiter=',')
+    
+    return data
+
+def get_SDSS(ra, dec, rad=1/60., name='', silent=False):
+    '''
+    >> data = get_SDSS(ra, dec, rad=1, dir='./' name='mydata')
+
+    submit CAS job via sqlcl
+    input:
+     ra, dec (deg)
+    optional input:
+      radius=1/60. (deg).
+      name if given, we write file name
+      silent=False shut it.
+
+    '''
+    cas = SDSS_cas.replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad*60))
+    
+    if not(silent):
+        print cas
+
+    data  = asciitable.read(sqlcl.query(cas).readlines())
+    if name: 
+        if not(silent):
+            print 'writing to ', name
+        pyfits.writeto(name,np.array(data))
+    
+    return data
+
 
 def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=False):
     '''
