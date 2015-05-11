@@ -102,11 +102,17 @@ def get_SDSS(ra, dec, rad=1/60., name='', silent=False):
     if not(silent):
         print cas
 
-    data  = asciitable.read(sqlcl.query(cas).readlines())
+    result = sqlcl.query(cas)
+
+    if not(silent):
+        print 'CAS job done, now reading query...'
+
+    data  = asciitable.read(result.readlines())
+    
     if name: 
         if not(silent):
             print 'writing to ', name
-        pyfits.writeto(name,np.array(data))
+        pyfits.writeto(name,np.array(data), clobber=True)
     
     return data
 
