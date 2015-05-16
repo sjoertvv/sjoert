@@ -5,9 +5,6 @@ small collection of functions for pyFITS tables
 '''
 from astropy.io import fits as pyfits
 
-# this will be needed in the future, when STScI stops supporting the stand-alone version
-#from astropy.io import fits as pyfits 
-
 def append_field(orig_table, name, data=[], format='D', out_name=''):
     '''
     append a field (a column) to a FITS table 
