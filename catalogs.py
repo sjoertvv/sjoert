@@ -8,18 +8,15 @@ this is sjoert.dirs.catdir+NED/
 2011 - Sjoert
 '''
 
-import sjoert
-import os
-import re
+import os, time, re
 import numpy as np
-import string2radec
-import time
-from astropy.io import fits as pyfits
-from astropy.io import ascii as asciitable
-
 import shlex, subprocess
 
+import dirs
 from stellar import iau_name
+
+from astropy.io import ascii as asciitable
+from astropy.io import fits as pyfits
 
 try:
     import sqlcl 
@@ -30,7 +27,7 @@ except ImportError:
 
 # change this variable to change the default input to all NED functions
 # or give NEDdir explicitly to each call
-NEDdir = sjoert.dirs.catdir+'NED/'
+NEDdir = dirs.catdir+'NED/'
 
 
 #NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-datasearch?search_type=Photo_id&objid=80631&objname=_SOURCE_&img_stamp=YES&hconst=73.0&omegam=0.27&omegav=0.73&corr_z=1&of=table"' # doesn't work because of objid key
@@ -127,7 +124,7 @@ def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=Fa
     if name is not None:
         local_name = name.strip().replace(' ', '_')
     else:
-        local_name = sjoert.stellar.iau_name(ra, dec)
+        local_name = iau_name(ra, dec)
     
     fname  = NEDdir+local_name+'.html'
     
@@ -300,8 +297,8 @@ def get_dss(ra, dec, size=1/60., name=None, sdir=None, color='red',
     name = name
     
     if sdir is None:
-        sdir = sjoert.dirs.catdir+'DSS/fits/'
-        indir = sjoert.dirs.catdir+'DSS/infiles/' #keep log somewhere else
+        sdir = dirs.catdir+'DSS/fits/'
+        indir = dirs.catdir+'DSS/infiles/' #keep log somewhere else
     else:
         indir=sdir
 

@@ -15,20 +15,15 @@ except ImportError:
     print 'the fof function (one_group) wont work'
     print '(you can obtain k3match from pschella.github.com/k3match/)'
 
-try:
-    import cosmolopy as cospy
-    sjoert_cosmo = cospy.parameters.WMAP7_BAO_H0_mean(flat=True, extras=False)
-except ImportError:
-    print 'sjoert.stellar ImportError: cosmolopy import failed, function using distances will fail'
-    print '(get it from roban.github.com/CosmoloPy/)'
 
+import astropy.cosmology as cospy
 
 # import some useful stuff from pyspherematch's util.starutil_numpy
 from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
 
 
-from numpy import floor, double
 import numpy as np
+from numpy import floor, double
 
 
 # Some Physical constants (cgs)
@@ -252,63 +247,48 @@ def iau_name(ra,dec,prefix='',precision=1, verbose=False):
     return prefix+adstr
 
 
-def lumdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
+def lumdis(z, h=.72, Om0=.3):
     '''
     return luminosity distance in cm
-    use WMAP+SN+BOA comology
-    with omega_m_0=0.3, omega_l_0=0.3, h=0.72
+    use FlatLambdaCDM
+    with Om0=0.3, h=0.72
     can be overwritten using keywords
-    >> ld_cm = lumdis(z, h=.72, omega_m_0=.3, omega_l_0=.7)
+    >> ld_cm = lumdis(z, h=.72, Om0=.3)
     '''
-    cosmo = sjoert_cosmo
-    cosmo['h'] = h
-    cosmo['omega_M_0'] = omega_m_0
-    cosmo['omega_lambda_0'] = omega_l_0
-    return cospy.distance.luminosity_distance(z, **cosmo)*1e6*parsec_in_cm
+    return cospy.FlatLambdaCDM(H0=h*100, Om0=Om0).luminosity_distance(z).value *1e6*parsec_in_cm
 
-def comdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
+def comdis(z, h=.72, Om0=.3):
     '''
     return comosving distance in cm
-    use WMAP+SN+BOA comology
-    with omega_m_0=0.3, omega_l_0=0.3, h=0.72
+    use FlatLambdaCDM
+    with Om0=0.3, h=0.72
     can be overwritten using keywords
-    >> cd_cm =  comdis(z, h=.72, omega_m_0=.3, omega_l_0=.7)
+    >> cd_cm =  comdis(z, h=.72, Om0=.3)
     '''
-    cosmo = sjoert_cosmo
-    cosmo['h'] = h
-    cosmo['omega_M_0'] = omega_m_0
-    cosmo['omega_lambda_0'] = omega_l_0
-    
-    return cospy.distance.comoving_distance(z, **cosmo)*1e6*parsec_in_cm
+    return cospy.FlatLambdaCDM(H0=h*100, Om0=Om0).comoving_distance(z).value *1e6*parsec_in_cm
 
-def angdis(z, h=.72, omega_m_0=.3, omega_l_0=.7):
+def angdis(z, h=.72, Om0=.3):
     '''
     return comosving distance in cm
-    use WMAP+SN+BOA comology
-    with omega_m_0=0.3, omega_l_0=0.3, h=0.72
+    use FlatLambdaCDM
+    with Om0=0.3, h=0.72
     can be overwritten using keywords
-    >> ad_cm =  angdis(z, h=.72, omega_m_0=.3, omega_l_0=.7)
+    >> ad_cm =  angdis(z, h=.72, Om0=.3)
     '''
-    cosmo = sjoert_cosmo
-    cosmo['h'] = h
-    cosmo['omega_M_0'] = omega_m_0
-    cosmo['omega_lambda_0'] = omega_l_0
     
-    return cospy.distance.angular_diameter_distance(z,
-                                                    **cosmo)*1e6*parsec_in_cm
+    return cospy.FlatLambdaCDM(H0=h*100, Om0=Om0).angular_diameter_distance(z).value *1e6*parsec_in_cm
 
-def pc2as(z, h=.72, omega_m_0=.3, omega_l_0=.7):
+def pc2as(z, h=.72, Om0=.3):
     '''
     convert parsec to arcsec
     >> as = pc2mas(0.1) * 10
     '''
-    return 1/(angdis(z, h, omega_m_0, omega_l_0)/parsec_in_cm)/np.pi*180*3600
-
+    return 1/(angdis(z, h, Om0, omega_l_0)/parsec_in_cm)/np.pi*180*3600
 
 
 
 def lum2flux(L, z=None, cm=None, nu=None, band=None,
-                     h=.72, omega_m_0=.3, omega_l_0=.7):
+                     h=.72, Om0=.3):
     '''
     erg/s to Jansky
     >> flux = lum2flux(L, z, nu=1.4e9) # in Jy
@@ -325,12 +305,12 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
         return None
 
     if band is not(None):  nu = _get_nu(nu, band)
-    if cm is None: cm = lumdis(z, h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0)
+    if cm is None: cm = lumdis(z, h=h, Om0=Om0, omega_l_0=omega_l_0)
 
     return L / (nu * 4*np.pi * cm**2) *1e23 
 
 def lum2mag(L, z=None, cm=None, nu=None, band=None,
-                     h=.72, omega_m_0=.3, omega_l_0=.7):
+                     h=.72, Om0=.3):
     '''
     erg/s to AB mag
     >> flux = lum2flux(L, z, nu=1.4e9) # in Jy
@@ -344,7 +324,7 @@ def lum2mag(L, z=None, cm=None, nu=None, band=None,
     '''
 
     return flux2mag(lum2flux(L, z=z, cm=cm, nu=nu, band=band,
-                     h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0))
+                     h=h, Om0=Om0, omega_l_0=omega_l_0))
 
 
 def flux2nuFnu(S, nu):
@@ -362,7 +342,7 @@ def mag2nuFnu(mag, nu):
     return mag2flux(mag)*1e-23*nu
 
 def flux2lum(S, z=None, cm=None, nu=None, band=None,
-                     h=.72, omega_m_0=.3, omega_l_0=.7):
+                     h=.72, Om0=.3):
     '''
     Jansky to erg/s
     >> nuLnu = flux2lum(S, z, nu=None, band=None)
@@ -379,17 +359,17 @@ def flux2lum(S, z=None, cm=None, nu=None, band=None,
         return None
 
     if band is not(None):  nu = _get_nu(nu, band)
-    if cm is None: cm = lumdis(z, h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0)
+    if cm is None: cm = lumdis(z, h=h, Om0=Om0, omega_l_0=omega_l_0)
 
     return 4*np.pi * cm**2 * S*1e-23 * nu
 
 
-def dismod(z, h=.72, omega_m_0=.3, omega_l_0=.7):
+def dismod(z, h=.72, Om0=.3):
     '''
     distance modulus: 5*np.log10(lumdis/10.)
-    >> dm = dismod(z, h=.72, omega_m_0=.3, omega_l_0=.7)
+    >> dm = dismod(z, h=.72, Om0=.3)
     '''
-    d = lumdis(z, h=h, omega_m_0=omega_m_0, omega_l_0=omega_l_0)/parsec
+    d = lumdis(z, h=h, Om0=Om0)/parsec
     return 5*np.log10(d/10.)
 
 
@@ -451,7 +431,7 @@ def mag2flux(mag):
     return 10**(-0.4*(mag + 48.6)) *1e23
 
 def mag2lum(M, z, nu=None, band=None,
-                      h=.72, omega_m_0=.3, omega_l_0=.7):
+                      h=.72, Om0=.3):
     '''
     lum  = mag2lum(22.5, 0.1, band='r')
     convert AB magnitude to luminosity in erg/s
@@ -459,7 +439,7 @@ def mag2lum(M, z, nu=None, band=None,
     can overwrite default cosmology using keywords (see lumdis docstring)
     '''
 
-    return abs2lum(M - dismod(z, omega_m_0=omega_m_0, omega_l_0=omega_l_0), nu, band)
+    return abs2lum(M - dismod(z, Om0=Om0), nu, band)
 
 def tundo(Mr):
     '''
@@ -555,6 +535,29 @@ def Planck(nu=None, T=None):
         return np.nan
     
     return 2*h/c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
+
+
+def dPlanckdT(nu=None, T=None):
+    if (nu is None) or (T is None):
+        print 'ERROR, please give input: '
+        print 'Planck(nu=nu, T=T)'
+        return np.nan
+
+    exp_part = np.exp(h*nu/(k*T))
+    
+    return 2*h/c**2 * h*nu/k*exp_part / (T**2 * (exp_part-1)**2)
+
+def dPlanckdnu(nu=None, T=None):
+    if (nu is None) or (T is None):
+        print 'ERROR, please give input: '
+        print 'Planck(nu=nu, T=T)'
+        return np.nan
+    hkT=h/(k*T)
+    exp_part = np.exp(nu*hkT)
+    
+    return 2*h/c**2 * (3*nu**2/exp_part  + nu**3/(hkT*(exp_part-1)**2))
+
+
 
 def Rs(Mbh):
     '''

@@ -4,7 +4,7 @@ reading and writing, mostly fits/ascii tables and record arrays
 2012 Aug - updated docstrings (SVV)
 '''
 
-import pyfits
+from astropy.io import fits as pyfits
 import numpy as np
 import pickle
 
