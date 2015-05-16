@@ -8,9 +8,8 @@ import time
 #time0 = time.time()
 
 from astropy.io import fits as pyfits
-from astropy.io import ascii as asciitable
+#from astropy.io import ascii as asciitable # slow (0.3 s)
 import astropy.wcs as pywcs
-# this step takes 0.5 sec on my machine
 
 import stellar
 import simstat

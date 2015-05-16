@@ -13,9 +13,10 @@ import numpy as np
 import shlex, subprocess
 
 import dirs
+from io import readascii
 from stellar import iau_name
 
-from astropy.io import ascii as asciitable
+
 from astropy.io import fits as pyfits
 
 try:
@@ -72,12 +73,15 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     f = open(dir+name,'r')
     lines = ''
     for l in f.readlines():
-        print l
-        if l == '#Table2\n': 
+        #print l
+        if l.count('#Table2')==1: 
             break
         lines+=l
 
-    data = asciitable.read(lines, delimiter=',')
+    lines= lines.split('\n')
+    print lines[1]
+    print lines[2:]
+    data = readascii(lines=lines[2:], delimiter=',', names=lines[1].split(','))
     
     return data
 
@@ -104,7 +108,10 @@ def get_SDSS(ra, dec, rad=1/60., name='', silent=False):
     if not(silent):
         print 'CAS job done, now reading query...'
 
-    data  = asciitable.read(result.readlines())
+    #print result.readlines()
+    lines = result.readlines()
+
+    data  = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
     
     if name: 
         if not(silent):

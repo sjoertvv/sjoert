@@ -17,38 +17,52 @@ def readpickle(filename):
    f.close()
    return rec
 
-def readascii(filename='', names='', comment='#',
+def readascii(filename='', lines=None, names='', comment='#',
               delimiter='', write_pickle=False, silent=False, verbose=False):
     '''
     read asciitable, return record array
-    >> rec = readascii(filename='', names='', comment='#',
-                                  delimiter='', write_pickle=False, silent=False):
-                                  
+    >> rec = readascii(filename='', names=['a', 'b'], comment='#',
+                                  delimiter='', write_pickle=False, silent=False):                                  
+
     if header contains a line that equals the number of columns
     of the first row of data we use this to label the columns
+
+    alternative input:
+     lines = array of lines (eg, from f.open(filename).readlines())
 
     optinal keywords:
      names: names of cols (optional)
      write_pickple: name of the pickle, if True we write filename+.pickple
     '''
     
-    try:         
-        f = open(filename, 'r')
-    except IOError:
-        raise(IOError(filename))
+    if filename:
+        try:         
+            f = open(filename, 'r')
+        except IOError:
+            raise(IOError(filename))
     
     # read through header, find number of columns
     com_lines = []
-    line = f.readline()
+    
+    if filename:
+        lines = f.readlines()
+
+    l=0
+    line = lines[0]
     com_lines.append(line)
+    
     while (line[0] == comment) | (len(line) <= 1):
-        line = f.readline() #read untill we reach data
+        line = lines[l] #read untill we reach data
         com_lines.append(line)
+        l+=1
+
     sline = line.strip(comment).split()
     if (delimiter !=''):
         sline = line.strip(comment).split(delimiter)
     ncols = len(sline)
-    f.close() 
+    if filename:
+        f.close() 
+    
     if not silent: print 'first line of data:', str(sline)
     if not silent: print 'number of colums:', ncols
 
@@ -72,8 +86,9 @@ def readascii(filename='', names='', comment='#',
         for i in range(ncols):
             names.append('field-'+np.str(i))
 
-    # Read file, using loadtxt or recfromtxt
-    dd = np.recfromtxt(filename, delimiter=delimiter, names=names)
+    # Read file
+    dd = np.recfromtxt(lines, delimiter=delimiter, names=names)
+
     # notes:
     # recform finds formats automatically, 
     # while genfromtxt and loadtxt do not
