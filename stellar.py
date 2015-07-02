@@ -556,6 +556,29 @@ def Planck(nu=None, T=None):
     
     return 2*h/c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
 
+
+def dPlanckdT(nu=None, T=None):
+    if (nu is None) or (T is None):
+        print 'ERROR, please give input: '
+        print 'Planck(nu=nu, T=T)'
+        return np.nan
+
+    exp_part = np.exp(h*nu/(k*T))
+    
+    return 2*h/c**2 * h*nu/k*exp_part / (T**2 * (exp_part-1)**2)
+
+def dPlanckdnu(nu=None, T=None):
+    if (nu is None) or (T is None):
+        print 'ERROR, please give input: '
+        print 'Planck(nu=nu, T=T)'
+        return np.nan
+    hkT=h/(k*T)
+    exp_part = np.exp(nu*hkT)
+    
+    return 2*h/c**2 * (3*nu**2/exp_part  + nu**3/(hkT*(exp_part-1)**2))
+
+
+
 def Rs(Mbh):
     '''
     return Schwarzschild Radius in cm
