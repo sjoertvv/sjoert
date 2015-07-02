@@ -3,10 +3,6 @@ setup matplotlib for high-quality plots
 '''
 import re
 import os
-try:
-     import bovy_plot
-except ImportError:
-     dummy = 'No dens2 wrappers this time'
 import numpy as np
      
 from matplotlib import rc
@@ -181,85 +177,90 @@ def density_contours(x,y, levels=[0.95],colors=['k'], bins=[20,20],
 
 
 def bovy_dens2d(x,y, *args,**kwargs):
-    '''
-    wrapper around bovy_dens2d
-    hist_2d = bovy_dens2d(x,y, *args,**kwargs)
-    '''
+  '''
+  wrapper around bovy_dens2d
+  hist_2d = bovy_dens2d(x,y, *args,**kwargs)
+  '''
 
-    if kwargs.has_key('xrange'):
-        xrange=kwargs['xrange']
-        kwargs.pop('xrange')
-    else:
-        xrange=[x.min(),x.max()]
-    if kwargs.has_key('yrange'):
-        yrange=kwargs['yrange']
-        kwargs.pop('yrange')
-    else:
-        yrange=[y.min(),y.max()]
-    ndata= len(x)
-    if kwargs.has_key('bins'):
-        bins= kwargs['bins']
-        kwargs.pop('bins')
-    else:
-        bins= round(0.3*sc.sqrt(ndata))
-    if kwargs.has_key('aspect'):
-        aspect= kwargs['aspect']
-        kwargs.pop('aspect')
-    else:
-        aspect= (xrange[1]-xrange[0])/(yrange[1]-yrange[0])
-    if kwargs.has_key('weights'):
-        weights= kwargs['weights']
-        kwargs.pop('weights')
-    else:
-        weights= None
-    if kwargs.has_key('levels'):
-        levels= kwargs['levels']
-        kwargs.pop('levels')
-    else:
-        levels= special.erf(0.5*sc.arange(1,4))
+  try:
+    import bovy_plot
+  except ImportError:
+    print 'Import bovyplot failed'
 
-    hh_2d, edges= sc.histogramdd(sc.array([x, y]).T,
-                                            bins=bins, range=[xrange ,yrange])
+  if kwargs.has_key('xrange'):
+      xrange=kwargs['xrange']
+      kwargs.pop('xrange')
+  else:
+      xrange=[x.min(),x.max()]
+  if kwargs.has_key('yrange'):
+      yrange=kwargs['yrange']
+      kwargs.pop('yrange')
+  else:
+      yrange=[y.min(),y.max()]
+  ndata= len(x)
+  if kwargs.has_key('bins'):
+      bins= kwargs['bins']
+      kwargs.pop('bins')
+  else:
+      bins= round(0.3*sc.sqrt(ndata))
+  if kwargs.has_key('aspect'):
+      aspect= kwargs['aspect']
+      kwargs.pop('aspect')
+  else:
+      aspect= (xrange[1]-xrange[0])/(yrange[1]-yrange[0])
+  if kwargs.has_key('weights'):
+      weights= kwargs['weights']
+      kwargs.pop('weights')
+  else:
+      weights= None
+  if kwargs.has_key('levels'):
+      levels= kwargs['levels']
+      kwargs.pop('levels')
+  else:
+      levels= special.erf(0.5*sc.arange(1,4))
 
-    bovy_plot.bovy_dens2d(hh_2d.T,
-            contours=True,levels=levels,cntrmass=True,
-            cmap='gist_yarg',origin='lower',
-            xrange=xrange, yrange=yrange, aspect=aspect,
-            interpolation='nearest',  retCumImage=True, **kwargs)
+  hh_2d, edges= sc.histogramdd(sc.array([x, y]).T,
+                                          bins=bins, range=[xrange ,yrange])
 
-    return hh_2d
+  bovy_plot.bovy_dens2d(hh_2d.T,
+          contours=True,levels=levels,cntrmass=True,
+          cmap='gist_yarg',origin='lower',
+          xrange=xrange, yrange=yrange, aspect=aspect,
+          interpolation='nearest',  retCumImage=True, **kwargs)
+
+  return hh_2d
     
 def rtext(line,x,y,s, golden=False, **kwargs):
-    '''
-    add text to line
-    rtext(line,x,y,s, **kwargs)
+  '''
+  add text to line
+  rtext(line,x,y,s, **kwargs)
 
-    input line argument is ax.lines[0] (and ax = plt.gca())
-    
-    taken from http://stackoverflow.com/questions/17252790/matplotlib-adding-text-with-more-than-one-line-adding-text-that-can-follow-the
-    '''
-    from scipy.optimize import curve_fit
-    xdata,ydata = line.get_data()
-    dist = np.sqrt((x-xdata)**2 + (y-ydata)**2)
-    dmin = dist.min()
-    TOL_to_avoid_rotation = 0.3
-    if dmin > TOL_to_avoid_rotation:
-        r = 0.
-    else:
-        index = dist.argmin()
-        xs = xdata[ [index-2,index-1,index,index+1,index+2] ]
-        ys = ydata[ [index-2,index-1,index,index+1,index+2] ]
-        def f(x,a0,a1,a2,a3):
-            return a0 + a1*x + a2*x**2 + a3*x**3
-        popt, pcov = curve_fit(f, xs, ys, p0=(1,1,1,1))
-        a0,a1,a2,a3 = popt
-        ax = plt.gca()
-        derivative = (a1 + 2*a2*x + 3*a3*x**2)
-        derivative /= ax.get_data_ratio()
-        r = np.arctan( derivative )
+  input line argument is ax.lines[0] (and ax = plt.gca())
+  
+  taken from http://stackoverflow.com/questions/17252790/matplotlib-adding-text-with-more-than-one-line-adding-text-that-can-follow-the
+  '''
+  from scipy.optimize import curve_fit
+  xdata,ydata = line.get_data()
+  dist = np.sqrt((x-xdata)**2 + (y-ydata)**2)
+  dmin = dist.min()
+  TOL_to_avoid_rotation = 0.3
+  if dmin > TOL_to_avoid_rotation:
+      r = 0.
+  else:
+      index = dist.argmin()
+      xs = xdata[ [index-2,index-1,index,index+1,index+2] ]
+      ys = ydata[ [index-2,index-1,index,index+1,index+2] ]
+      def f(x,a0,a1,a2,a3):
+          return a0 + a1*x + a2*x**2 + a3*x**3
+      popt, pcov = curve_fit(f, xs, ys, p0=(1,1,1,1))
+      a0,a1,a2,a3 = popt
+      ax = plt.gca()
+      derivative = (a1 + 2*a2*x + 3*a3*x**2)
+      derivative /= ax.get_data_ratio()
+      r = np.arctan( derivative )
 
-    rot = np.rad2deg(r)
-    if golden: 
-        rot /= 1.6180
-        
-    return plt.text(x, y, s, rotation=rot, **kwargs)
+  rot = np.rad2deg(r)
+  if golden: 
+      rot /= 1.6180
+      
+  return plt.text(x, y, s, rotation=rot, **kwargs)

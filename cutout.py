@@ -6,8 +6,14 @@ wcs info in header is updated
 import numpy as np
 from matplotlib import pyplot as plt
 import os,sys,time
-import pyfits, pywcs
-from sjoert.stellar import iau_name
+#import pyfits, pywcs
+
+import astropy.wcs as pywcs
+from astropy.io import fits as pyfits
+
+
+
+from stellar import iau_name
 
 # input
 def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,

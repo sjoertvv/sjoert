@@ -3,10 +3,7 @@ small collection of functions for pyFITS tables
 (see sjoert.io for I/O of FITS files)
 
 '''
-import pyfits
-
-# this will be needed in the future, when STScI stops supporting the stand-alone version
-#from astropy.io import fits as pyfits 
+from astropy.io import fits as pyfits
 
 def append_field(orig_table, name, data=[], format='D', out_name=''):
     '''
