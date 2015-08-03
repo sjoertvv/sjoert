@@ -101,7 +101,7 @@ def get_SDSS(ra, dec, rad=1/60., name='', silent=False):
     cas = SDSS_cas.replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad*60))
     
     if not(silent):
-        print cas
+        print 'running CASjob:\n',cas
 
     result = sqlcl.query(cas)
 
@@ -111,12 +111,19 @@ def get_SDSS(ra, dec, rad=1/60., name='', silent=False):
     #print result.readlines()
     lines = result.readlines()
 
+    if len(lines)<=2:
+        print 'no sources found, returning None'
+        return None
+
     data  = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
     
     if name: 
+        if data.size == 1:
+            data = np.array([data])
         if not(silent):
+            print '# of entries:', len(data)
             print 'writing to ', name
-        pyfits.writeto(name,np.array(data), clobber=True)
+        pyfits.writeto(name, data, clobber=True)
     
     return data
 
