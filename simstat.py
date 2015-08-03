@@ -230,6 +230,8 @@ def binthem(x, y, yerr=None, bins=10, range=[],
     for i in np.arange(len(xmid)):
 
         ibin = np.where((x>=x_bins[i]) & (x<x_bins[i+1]))[0]
+        if i == (len(xmid)-1): # close last bin
+            ibin = np.where((x>=x_bins[i]) & (x<=x_bins[i+1]))[0]
 
         xmid[i] = np.mean(x[ibin])
 
