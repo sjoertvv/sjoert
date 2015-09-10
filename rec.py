@@ -84,7 +84,17 @@ def merge_rec(d1,d2):
 
     only collumns from d1 are used
     '''
-    newrec = np.empty(d1.shape[0]+d2.shape[0],dtype=d1.dtype)
+    
+    if len(d1.shape)==0:
+        s1 = 1
+    else:
+        s1 = d1.shape[0] 
+    if len(d2.shape)==0:
+        s2 = 1
+    else: 
+        s2 = d2.shape[0]
+    
+    newrec = np.empty(s1+s2, dtype=d1.dtype)
     for key in d1.dtype.names:
         try:
             d2[key]

@@ -441,6 +441,23 @@ def mag2lum(M, z, nu=None, band=None,
 
     return abs2lum(M - dismod(z, Om0=Om0), nu, band)
 
+
+def mag2diff(mag, mag_err, baseline, baseline_err):
+    '''
+    >> diff_mag, diff_mag_err = mag2diff(mag, mag_err, baseline, baseline_err)
+
+    compute the diffence between two magnitudes, plus the uncertainty 
+    '''
+
+    flux_baseline = 10**(-0.4*(baseline))
+    flux = 10**(-0.4*mag)
+    flux_diff = flux - flux_baseline
+    flux_diff_err = np.sqrt((flux*mag_err)**2 + (flux_baseline*baseline_err)**2)
+    mag_diff = -2.5*np.log10(flux_diff)
+    mag_diff_err = flux_diff_err / flux_diff
+    return mag_diff, mag_diff_err
+
+
 def tundo(Mr):
     '''
     return black hole mass based on SDSS r-band absolute magnitude

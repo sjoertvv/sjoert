@@ -16,7 +16,7 @@ from astropy.io import fits as pyfits
 from stellar import iau_name
 
 # input
-def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
+def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
            writepdf=False, writefits=False, silent=False):
     '''
     >> sub_hdu = cutout(filename='file.fits', center=[12,-1.], im_size=0.1,
@@ -30,6 +30,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
      - center=[ra,dec] (deg)
      - im_size=0.1 (deg)
     optional input:
+     - pix input center and im_size are in pixel units
      - writepdf='name.pdf' or True (write filename_sub.pdf)
      - writefits='name.fits' or True (fileanme+sub.fits
 
@@ -37,7 +38,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
     '''
 
     if (filename=='') and not(hdu):
-        print 'please give filename or hdu'
+        print 'please give filename= or hdu='
         return
     if not(hdu) and not(os.path.isfile(filename)):
         print 'file :'+ filename+ '\n not found' 
@@ -59,23 +60,30 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
         print 'ERROR: type(hdu) needs to be <pyfits.core.HDUList> or pyfits.core.PrimaryHDU'
         return
 
-    #  get WCS, get image
-    wcs = pywcs.WCS(header=hdu.header,  naxis=2) #fobj=hdulist,
+    # get image
     im = hdu.data
     
+    #  get WCS,
+    if not(pix):
+        wcs = pywcs.WCS(header=hdu.header,  naxis=2) #fobj=hdulist,
+    
 
-    if not silent: print 'image shape', im.shape
-    if (len(im.shape) == 3):
-        if not silent: print 'using first layer of image'
-        im = im[0,:,:]
-        print 'new image shape', im.shape
-    if (len(im.shape) == 4):
-        if not silent: print 'using first layer of image'
-        im = im[0,0,:,:]
-        if not silent: print 'new image shape', im.shape
+        if not silent: print 'image shape', im.shape
+        if (len(im.shape) == 3):
+            if not silent: print 'using first layer of image'
+            im = im[0,:,:]
+            print 'new image shape', im.shape
+        if (len(im.shape) == 4):
+            if not silent: print 'using first layer of image'
+            im = im[0,0,:,:]
+            if not silent: print 'new image shape', im.shape
 
-    # conver center en overplot coordinates
-    pcenter = (wcs.wcs_sky2pix([center], 1))[0]
+        # conver center en overplot coordinates
+        #pcenter = (wcs.wcs_sky2pix([center], 1))[0] # if pywcs
+        pcenter = (wcs.wcs_world2pix([center],0))[0] # if astropy.wcs 
+    else:
+        pcenter = center
+
 
     # slice the image
     if not silent: print 'center in pixel coordinates', pcenter
@@ -87,7 +95,10 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,
     #delta=  np.abs(wcs.wcs_sky2pix( [center-im_size], 1)[0] - pcenter)/2.
 
     # use pixel scale to define boundaries
-    delta = np.abs(0.5*im_size / np.array([hdu.header['CDELT1'], hdu.header['CDELT2']]))
+    if not(pix):
+        delta = np.abs(0.5*im_size / np.array([hdu.header['CDELT1'], hdu.header['CDELT2']]))
+    else:
+        delta = (im_size/2., im_size/2.)
 
     ax1l = pcenter[0]-delta[0]
     ax1u=pcenter[0]+delta[0]

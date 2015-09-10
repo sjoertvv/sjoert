@@ -13,9 +13,11 @@ import numpy as np
 import shlex, subprocess
 
 import dirs
+import rec
 from io import readascii
-from stellar import iau_name
+from astropy.io import ascii 
 
+from stellar import iau_name
 
 from astropy.io import fits as pyfits
 
@@ -85,7 +87,7 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     
     return data
 
-def get_SDSS(ra, dec, rad=1/60., name='', silent=False):
+def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
     '''
     >> data = get_SDSS(ra, dec, rad=1, dir='./' name='mydata')
 
@@ -98,32 +100,52 @@ def get_SDSS(ra, dec, rad=1/60., name='', silent=False):
       silent=False shut it.
 
     '''
-    cas = SDSS_cas.replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad*60))
+    if np.isscalar(ra0):
+        ra0 = [ra0]
+        dec0 = [dec0]
+
+    out_list = [] 
+    for ra, dec in zip(ra0, dec0):
+        cas = SDSS_cas.replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad*60))
     
-    if not(silent):
-        print 'running CASjob:\n',cas
-
-    result = sqlcl.query(cas)
-
-    if not(silent):
-        print 'CAS job done, now reading query...'
-
-    #print result.readlines()
-    lines = result.readlines()
-
-    if len(lines)<=2:
-        print 'no sources found, returning None'
-        return None
-
-    data  = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
-    
-    if name: 
-        if data.size == 1:
-            data = np.array([data])
         if not(silent):
-            print '# of entries:', len(data)
+            print 'running CASjob:\n',cas
+
+        result = sqlcl.query(cas)
+
+        if not(silent):
+            print 'CAS job done, now reading query...'
+
+        #print result.readlines()
+        lines = result.readlines()
+
+        if debug:
+            print ra, dec, lines
+
+        if len(lines)<=2:
+            print 'no sources found, for ra,dec:', ra, dec
+        else:
+            data = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
+            out_list.append(data)
+
+    if len(out_list)==0:
+        return None # no data, with one input
+
+    if len(out_list)==1:
+        out = out_list[0]
+
+    if len(out_list)>1:
+        data_arr = np.repeat(out_list[0],1)
+        for dd in out_list[1:]:
+            data_arr = rec.merge_rec(data_arr, np.repeat(dd,1))
+            #data_arr =  np.concatenate(data_arr, dd)
+        out= data_arr
+
+    if name: 
+        if not(silent):
+            print '# of entries:', len(out)
             print 'writing to ', name
-        pyfits.writeto(name, data, clobber=True)
+        pyfits.writeto(name, out, clobber=True)
     
     return data
 
