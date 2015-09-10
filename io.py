@@ -185,16 +185,13 @@ def rec2fits(rec=None, filename=''):
     if not(filename) :
         print 'give flinename= for output' 
         return
-    
-    tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
 
-    # try to keep things working for older version of pyFITS
+    # try to keep things working for older version of pyFITS <-- no longer possible with astropy.io.fits
     #if pyfits.__version__.split('.')[0]>=3:
     #    if pyfits.__version__.split('.')[1]>=3:
     #        tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
     #    else:
     #        tbhdu=pyfits.new_table(rec) # yields DeprecationWarning as of v3.3
-
     # if you have an very old Pyfits,
     # we have to things the messy way       
     # else:
@@ -214,6 +211,10 @@ def rec2fits(rec=None, filename=''):
 
     #     cols = pyfits.ColDefs(clist) # make class that contains all colums
     #     tbhdu=pyfits.new_table(cols)
+    
+
+    tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
+
          
     print 'writing:', filename
     tbhdu.writeto(filename, clobber=True)

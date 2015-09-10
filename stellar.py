@@ -283,7 +283,7 @@ def pc2as(z, h=.72, Om0=.3):
     convert parsec to arcsec
     >> as = pc2mas(0.1) * 10
     '''
-    return 1/(angdis(z, h, Om0, omega_l_0)/parsec_in_cm)/np.pi*180*3600
+    return 1/(angdis(z, h, Om0)/parsec_in_cm)/np.pi*180*3600
 
 
 
@@ -305,7 +305,7 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
         return None
 
     if band is not(None):  nu = _get_nu(nu, band)
-    if cm is None: cm = lumdis(z, h=h, Om0=Om0, omega_l_0=omega_l_0)
+    if cm is None: cm = lumdis(z, h=h, Om0=Om0)
 
     return L / (nu * 4*np.pi * cm**2) *1e23 
 
@@ -324,7 +324,7 @@ def lum2mag(L, z=None, cm=None, nu=None, band=None,
     '''
 
     return flux2mag(lum2flux(L, z=z, cm=cm, nu=nu, band=band,
-                     h=h, Om0=Om0, omega_l_0=omega_l_0))
+                     h=h, Om0=Om0))
 
 
 def flux2nuFnu(S, nu):
@@ -359,7 +359,7 @@ def flux2lum(S, z=None, cm=None, nu=None, band=None,
         return None
 
     if band is not(None):  nu = _get_nu(nu, band)
-    if cm is None: cm = lumdis(z, h=h, Om0=Om0, omega_l_0=omega_l_0)
+    if cm is None: cm = lumdis(z, h=h, Om0=Om0)
 
     return 4*np.pi * cm**2 * S*1e-23 * nu
 
@@ -527,15 +527,18 @@ def ev2Hz(ev):
 
 def Planck(nu=None, T=None):
     '''
+    >> I = Planck(nu=1e14, T=1e4)
+
     return black body intensity (power per unit area per solid angle per frequency)
     '''
     if (nu is None) or (T is None):
         print 'ERROR, please give input: '
-        print 'Planck(nu=nu, T=T)'
+        print 'Planck(nu=nu, T=T)' 
         return np.nan
     
     return 2*h/c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
-
+        
+#return (2*h*c**2 / wave**5) / (np.exp(h*c/(wave*k*T))-1) 
 
 def dPlanckdT(nu=None, T=None):
     if (nu is None) or (T is None):
