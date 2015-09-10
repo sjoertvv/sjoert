@@ -185,33 +185,35 @@ def rec2fits(rec=None, filename=''):
     if not(filename) :
         print 'give flinename= for output' 
         return
+    
+    tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
 
     # try to keep things working for older version of pyFITS
-    if pyfits.__version__.split('.')[0]>=3:
-        if pyfits.__version__.split('.')[1]>=3:
-            tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
-        else:
-            tbhdu=pyfits.new_table(rec) # yields DeprecationWarning as of v3.3
+    #if pyfits.__version__.split('.')[0]>=3:
+    #    if pyfits.__version__.split('.')[1]>=3:
+    #        tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
+    #    else:
+    #        tbhdu=pyfits.new_table(rec) # yields DeprecationWarning as of v3.3
 
     # if you have an very old Pyfits,
     # we have to things the messy way       
-    else:
-        clist = []
-        for dt in rec.dtype.descr:
-            name = dt[0]
-            form = dt[1]
-            print name, form,
-            fits_form = 'D'
-            if len(form.split('i')) >1:
-                fits_form = 'K'
-            if len(form.split('S'))>1:
-                fits_form='A'+form.split('S')[1]
-            print fits_form
-            cc = pyfits.Column(name=name, format=fits_form, array=np.array(rec[name]))
-            clist.append(cc)
+    # else:
+    #     clist = []
+    #     for dt in rec.dtype.descr:
+    #         name = dt[0]
+    #         form = dt[1]
+    #         print name, form,
+    #         fits_form = 'D'
+    #         if len(form.split('i')) >1:
+    #             fits_form = 'K'
+    #         if len(form.split('S'))>1:
+    #             fits_form='A'+form.split('S')[1]
+    #         print fits_form
+    #         cc = pyfits.Column(name=name, format=fits_form, array=np.array(rec[name]))
+    #         clist.append(cc)
 
-        cols = pyfits.ColDefs(clist) # make class that contains all colums
-        tbhdu=pyfits.new_table(cols)
+    #     cols = pyfits.ColDefs(clist) # make class that contains all colums
+    #     tbhdu=pyfits.new_table(cols)
          
     print 'writing:', filename
     tbhdu.writeto(filename, clobber=True)
