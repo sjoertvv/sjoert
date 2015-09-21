@@ -93,11 +93,15 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
 
     submit CAS job via sqlcl
     input:
-     ra, dec (deg)
+     ra, dec (deg), can be arrays
     optional input:
-      radius=1/60. (deg).
+      radius=1/60. (deg)
       name if given, we write file name
       silent=False shut it.
+    note:
+     slow for many object because we loop over input coords; 
+     this could be log(N) faster if I knew how 
+     to upload coordinates and run fgetNearByObjEq on this list. 
 
     '''
     if np.isscalar(ra0):
