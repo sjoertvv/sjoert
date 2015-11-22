@@ -26,8 +26,9 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
        init
     PURPOSE:
        setup a figure for plotting
+       use golden ratio by default
     INPUT:
-       golden=False - use golden ratio (fig_heigh=fig_width/1.618)
+       golden=False - serif on the axis (IDL-like)
        fig_width=7 - width in inches
        fig_height=7 - height in inches
        axes_labelsize=21 - size of the axis-labels
@@ -46,9 +47,8 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
        2009-12-23 - Written - Bovy (NYU)
        2010-01-23 - New defauts more options - Sjoert
     """
-    
-    if golden:
-        fig_height=fig_width/1.6180
+    fig_height=fig_width/1.6180
+    if golden:    
         rc('font',**{'family':'serif','serif':['Times']})    
     else: 
         rc('font',**{'family':'sans-serif','sans-serif':['Helvetica','Bitstream Vera Sans', 'sans-serif']})
@@ -59,7 +59,7 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
     fig_size =  [fig_width,fig_height]
     params = { 'backend':'ps',
        'axes.labelsize': axes_labelsize,
-       'text.fontsize': text_fontsize,
+       'font.size': text_fontsize,
        'legend.fontsize': legend_fontsize,
        'xtick.labelsize':xtick_labelsize,
        'ytick.labelsize':ytick_labelsize,
@@ -73,9 +73,12 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
        'figure.subplot.left':subplot_left,
        'figure.subplot.top':subplot_top}
     
+    if not golden:
+      rc('text.latex', preamble='\usepackage{sfmath} \usepackage{amsmath}') 
+    else:
+      rc('text.latex', preamble='\usepackage{amsmath}')
     plt.rcParams.update(params)
-    rc('text.latex', preamble=r'\usepackage{amsmath}') 
-    #rc('text.latex', preamble='\usepackage{sfmath}')
+
 
 def print_end(filename,nosticks=False,**kwargs):
     """
