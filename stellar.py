@@ -554,8 +554,9 @@ def Planck(nu=None, T=None):
         return np.nan
     
     return 2*h/c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
-        
-#return (2*h*c**2 / wave**5) / (np.exp(h*c/(wave*k*T))-1) 
+
+def Planck_lambda(lambda=None, T=None):
+        return (2*h*c**2 / wave**5) / (np.exp(h*c/(wave*k*T))-1) 
 
 def dPlanckdT(nu=None, T=None):
     if (nu is None) or (T is None):
