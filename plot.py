@@ -74,7 +74,7 @@ def init(fig_width=7,fig_height=7,axes_labelsize=21,
        'figure.subplot.top':subplot_top}
     
     if not golden:
-      rc('text.latex', preamble='\usepackage{sfmath} \usepackage{amsmath}') 
+      rc('text.latex', preamble='') #\usepackage{sfmath} \usepackage{amsmath}
     else:
       rc('text.latex', preamble='\usepackage{amsmath}')
     plt.rcParams.update(params)

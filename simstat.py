@@ -15,7 +15,7 @@ def Gauss(x, mu=0, sigma=1, fwhm=None):
     '''
     if fwhm is not None: 
         sigma = 0.5 * fwhm / np.sqrt(2*np.log(2))
-    return 1/(sigma*np.sqrt(2*np.pi)) * np.exp(-0.5 * (x-mu)**2 / (sigma**2) )
+    return 1/(sigma*np.sqrt(2*np.pi)) * np.exp( -0.5 * (x-mu)**2 / (sigma**2) )
 
 def wmean(d, ivar):
     '''
@@ -282,8 +282,8 @@ def cdf_match(x,y, new_len=None):
     oversample. So len(y)>>len(x) is assumed. 
     
     optional input: 
-    - new_len=N, make length of y equal to N 
-    - oversample=False, allow multiple entries of y in y_sampled. 
+    - new_len=N        make length of y equal to N 
+    - oversample=False if True, allow multiple entries of y in y_sampled. 
     ''' 
 
     if new_len is None:
@@ -316,9 +316,73 @@ def cdf_match(x,y, new_len=None):
     return  y_out, y_idx
     
                      
+def mad(arr):
+    '''
+        Median Absolute Deviation: a "Robust" version of standard deviation.
+        Indices variabililty of the sample.
+        https://en.wikipedia.org/wiki/Median_absolute_deviation 
+    '''
+    arr = np.ma.array(arr).compressed() # should be faster to not use masked arrays.
+    med = np.median(arr)
+    return np.median(np.abs(arr - med))
                               
     
+def unbinned_gauss(arr, sigma_cut=10, verbose=False):
+    '''
+    >> mean, sigma = unbinned_gauss([1,2,3])
+
+    Fit normal distribution to array of data, with some robustness cooked in.
+
+    As name suggest, no binning, we maximize the product of likelihoods
+    of each element of the array (no weighting used). We guess sigma from 
+    the MAD and mean from the median.
+
+    optional input:
+    - sigma_cut=10 clip the probability that this sigma (ie, less weight for outliers)
+
+    '''
+
+    mean_guess = np.median(arr)
+    sigma_guess = mad(arr)*1.4826
     
+    n = 100 # feels nice
+    mean_arr = np.linspace(mean_guess-sigma_guess/1.5, mean_guess+sigma_guess/1.5, n) 
+    sigma_arr = np.linspace(sigma_guess/1.5, sigma_guess*1.5, n)
+
     
+    likel = np.zeros((n,n))
+    for j,s in enumerate(sigma_arr):
+        this_max = np.repeat(np.log(Gauss(sigma_cut*s, mu=0, sigma=s)), len(arr))        
+        for i,m in enumerate(mean_arr):            
+            likel[i,j] = np.sum(np.max([this_max, np.log(Gauss(arr, mu=m, sigma=s))],axis=0))
+            #likel[i,j] = np.sum(np.log(Gauss(arr, mu=m, sigma=s)))
+            #print i,j,m,s,likel[i,j],sum(np.log(Gauss(arr, mu=m, sigma=s))<this_max[0])
+
+    mxl = np.where(likel == np.max(likel))
+    
+    if verbose: 
+        print mxl[0],mxl[1]
+    
+    if len(mxl[0])>1:
+        print 'unbinned_gaus, WARNING: more than one max likelihood, please check input'
+        print mxl
+
+    elif (mxl[0]==0) or (mxl[1]==0) or \
+        (mxl[0]==0) or (mxl[1]==0):
+        print 'unbinned_gaus, WARNING: we hit an edge of sigma or mean array, please check input'
+        print mxl
+
+    return mean_arr[mxl[0]][0], sigma_arr[mxl[1]][0]
+
+def test_unbinned(): 
+    for x in np.linspace(0.8,3, 10):
+        tt = np.append(np.random.normal(size=10**x), np.random.normal(-1, 5, size=10**x/5))
+        m, s = unbinned_gauss(tt, sigma_cut=3)
+
+        print 'N true gauss',int(10**x), '  N false gauss', int(10**x/8)
+        print 'mean, median, likel  :',np.mean(tt), np.median(tt), m
+        print 'std, mad*1.483, likel:', np.std(tt), mad(tt)*1.4826, s
+        print ''
+
 
 

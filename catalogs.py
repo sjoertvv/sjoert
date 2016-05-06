@@ -14,12 +14,8 @@ import shlex, subprocess
 
 import dirs
 import rec
-from io import readascii
-from astropy.io import ascii 
-
+from io import readascii, pyfits
 from stellar import iau_name
-
-from astropy.io import fits as pyfits
 
 try:
     import sqlcl 
@@ -151,7 +147,7 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
             print 'writing to ', name
         pyfits.writeto(name, out, clobber=True)
     
-    return data
+    return out
 
 
 def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=False):

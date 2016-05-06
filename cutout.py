@@ -5,11 +5,10 @@ wcs info in header is updated
 
 import numpy as np
 from matplotlib import pyplot as plt
-import os,sys,time
-#import pyfits, pywcs
+import os 
 
 import astropy.wcs as pywcs
-from astropy.io import fits as pyfits
+from io import pyfits
 
 
 

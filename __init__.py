@@ -5,10 +5,9 @@ research with Python.
 2010-2012, Sjoert van Velzen
 """
 import time 
-#time0 = time.time()
 
 from astropy.io import fits as pyfits
-#from astropy.io import ascii as asciitable # slow (0.3 s)
+from astropy.io import ascii as asciitable 
 import astropy.wcs as pywcs
 
 import stellar
