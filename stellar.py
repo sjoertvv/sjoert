@@ -29,7 +29,7 @@ from numpy import floor, double
 # Some Physical constants (cgs)
 h = 6.6261e-27      # Planck's constant (erg s)
 c = 2.9979e+10      # Speed of light (cm/s)
-k = 1.3807e-16      # Boltzman's (erg/K)
+k = 1.3806e-16      # Boltzman's (erg/K)
 e = 1.6022e-12      # Electronvolt (erg)
 G = 6.674e-8        # Gravitational (kg m^3 / kg^2/s^2)
 sigma_SB =5.6704e-5 # Stefan-Boltzmann constant (erg/s/cm^2/K^4)
@@ -304,7 +304,7 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
         return None
 
-    if band is not(None):  nu = _get_nu(nu, band)
+    if band is not(None):  nu = get_nu(nu, band)
     if cm is None: cm = lumdis(z, h=h, Om0=Om0)
 
     return L / (nu * 4*np.pi * cm**2) *1e23 
@@ -358,7 +358,7 @@ def flux2lum(S, z=None, cm=None, nu=None, band=None,
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
         return None
 
-    if band is not(None):  nu = _get_nu(nu, band)
+    if band is not(None):  nu = get_nu(nu, band)
     if cm is None: cm = lumdis(z, h=h, Om0=Om0)
 
     return 4*np.pi * cm**2 * S*1e-23 * nu
@@ -386,6 +386,21 @@ def abs2mag(M, z=None):
 
     return lum2mag(lum, z=z, nu=1.)
 
+def get_nu(band):
+    if (band=='u') or (band=='g') or (band=='r') or\
+       (band=='i') or (band=='z') or\
+       (band=='FUV') or (band=='NUV'):
+    return sdss.get_nu(band)
+
+    if (band=='V') or (band=='B') or (band=='U') or\
+       (band=='UVW1') or (band=='UVM1') or\
+       (band=='UVW2'):
+    return c/swift.wdict[band]
+
+    raise NameError('Band not known:', band)
+
+
+
 
 def abs2lum(M, nu=None, band=None):
     '''
@@ -400,7 +415,7 @@ def abs2lum(M, nu=None, band=None):
         return None
 
     if nu is None:
-        nu = _get_nu(band)
+        nu = get_nu(band)
 
     return 10**(-0.4*M) * abs_const * nu
 
@@ -413,7 +428,7 @@ def lum2abs(L, nu=None, band=None):
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
         return None
     if not(nu):
-        nu = _get_nu(band)    
+        nu = get_nu(band)    
 
     return -2.5*np.log10(L/(abs_const*nu))
 
@@ -515,7 +530,6 @@ def MBH_scaling(bulge_mass, scat=0,
 # --- 
 # some filters and functions (moved to sdss.py)
 from sdss import sdss_nu, sdss_lambda
-from sdss import get_nu as _get_nu
 
 
 def gamma2beta(gamma):
