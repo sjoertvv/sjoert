@@ -1,5 +1,5 @@
 import datetime, calendar
-from stellar import datetoyear, datetomjd
+from time import datetoyear, datetomjd
 
 
 wdict = dict([('V',5468.),('B',4392.),('U',3465.),('UVW1',2600.),('UVM2',2246.),('UVW2',1928.)])

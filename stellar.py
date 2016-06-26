@@ -21,9 +21,11 @@ import astropy.cosmology as cospy
 # import some useful stuff from pyspherematch's util.starutil_numpy
 from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
 
-
 import numpy as np
 from numpy import floor, double
+
+import sdss, swift
+from sjoert.time import * # for backward comp
 
 
 # Some Physical constants (cgs)
@@ -390,12 +392,12 @@ def get_nu(band):
     if (band=='u') or (band=='g') or (band=='r') or\
        (band=='i') or (band=='z') or\
        (band=='FUV') or (band=='NUV'):
-    return sdss.get_nu(band)
+        return sdss.get_nu(band)
 
     if (band=='V') or (band=='B') or (band=='U') or\
        (band=='UVW1') or (band=='UVM1') or\
        (band=='UVW2'):
-    return c/swift.wdict[band]
+        return c/(swift.wdict[band]*1e-8)
 
     raise NameError('Band not known:', band)
 
@@ -526,10 +528,6 @@ def MBH_scaling(bulge_mass, scat=0,
 
     return 10**(norm + MBH_scat + slope* np.log10(bulge_mass/1e11))
 
-
-# --- 
-# some filters and functions (moved to sdss.py)
-from sdss import sdss_nu, sdss_lambda
 
 
 def gamma2beta(gamma):
@@ -685,57 +683,4 @@ def deVau(r, r_mid=1):
 
     return np.exp(-7.669*(r/r_mid)**(1/4.)-1)
 
-
-'''
-next three functions from starutil_numpy of Dustin Lang
-'''
-import datetime
-from datetime import datetime as dt
-import time
-def jdtomjd(jd):
-        return jd - 2400000.5
-def mjdtojd(mjd):
-        return mjd + 2400000.5
-def mjdtodate(mjd):
-        jd = mjdtojd(mjd)
-        return jdtodate(jd)
-def jdtodate(jd):
-        unixtime = (jd - 2440587.5) * 86400. # in seconds
-        return datetime.datetime.utcfromtimestamp(unixtime)
-def mjdtoyear(mjd):
-    if np.isscalar(mjd):
-        return datetoyear(mjdtodate(mjd))
-    else:
-        out = np.zeros(len(mjd))
-        for i in range(len(mjd)):
-            out[i] = datetoyear(mjdtodate(mjd[i]))
-        return out
-def timedeltatodays(dt):
-        return dt.days + (dt.seconds + dt.microseconds/1e6)/86400.
-def datetomjd(d):
-        d0 = datetime.datetime(1858, 11, 17, 0, 0, 0)
-        dt = d - d0
-        # dt is a timedelta object.
-        return timedeltatodays(dt)
-
-
-def datetoyear(date):
-    '''
-    import is datetime object
-    from http://stackoverflow.com/questions/6451655/python-how-to-convert-datetime-dates-to-decimal-years
-    '''
-
-    def sinceEpoch(date): # returns seconds since epoch
-        return time.mktime(date.timetuple())
-    s = sinceEpoch
-
-    year = date.year
-    startOfThisYear = dt(year=year, month=1, day=1)
-    startOfNextYear = dt(year=year+1, month=1, day=1)
-
-    yearElapsed = s(date) - s(startOfThisYear)
-    yearDuration = s(startOfNextYear) - s(startOfThisYear)
-    fraction = yearElapsed/yearDuration
-
-    return date.year + fraction
 
