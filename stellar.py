@@ -25,7 +25,7 @@ import numpy as np
 from numpy import floor, double
 
 import sdss, swift
-from sjoert.time import * # for backward comp
+from simtime import * # for backward comp
 
 
 # Some Physical constants (cgs)
@@ -302,7 +302,7 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
 
     note, no K-correction
     '''
-    if not(nu) and not(band):
+    if nu is None and not(band):
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
         return None
 
@@ -356,7 +356,7 @@ def flux2lum(S, z=None, cm=None, nu=None, band=None,
      - cm is set, redshift is ignored
     can overwrite default cosmology using keywords (see lumdis docstring)
     '''
-    if not(nu) and not(band):
+    if nu is None and not(band):
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
         return None
 
@@ -426,10 +426,10 @@ def lum2abs(L, nu=None, band=None):
     '''
     nu Lnu (erg/s) to AB absolute mag
     '''
-    if not(nu) and not(band):
+    if nu is None and not(band):
         print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
         return None
-    if not(nu):
+    if nu is None:
         nu = get_nu(band)    
 
     return -2.5*np.log10(L/(abs_const*nu))
@@ -530,6 +530,9 @@ def MBH_scaling(bulge_mass, scat=0,
 
 
 
+def beta2gamma(beta):
+    return (1-beta**2)**(-0.5)
+
 def gamma2beta(gamma):
     return (1-gamma**(-2))**(0.5)
 
@@ -600,12 +603,29 @@ def Rs(Mbh):
     '''
     return 2*Mbh*2e30*6.7e-11/9e16 *1e2 # cm
 
-def Msigma(sigma):
+def Msigma(sigma, source='McConnellMa13'):
     '''
-    Kormendy and Ho (2014) M-sigma relation 
     give sigma in km/s, return Mbh in Msun
+    
+    source=''
+    'McConnellMa13': default 
+    'Gultekin06': using relation for 'all' galaxies, w internal scatter 0.44 dex 
+    'KH14': Kormendy and Ho (2014) M-sigma relation, obtaining after selecting elliptical galaxies
     '''
-    return 10**8.5*(sigma/200.)**4.4 # in Msun
+    if source == 'Gultekin06':
+        return 10**8.13*(sigma/200.)**4.24
+
+    if source=='KH14':
+        return 10**8.5*(sigma/200.)**4.4 # in Msun
+
+    if source=='McConnellMa13':
+         return 10**8.32 * (sigma/200.)**5.64    
+    
+    if source=='FerrareseFord05':
+        return 1.66e8 * (sigma/200.)**4.86
+                 
+
+    print 'source for M-sigma relation unknown, returning None'
 
 def BH_influence(sigma):
     '''
@@ -674,6 +694,18 @@ def schechter(M, h=0.72, paper='Blanton03'):
     return 0.4*np.log(10) * psi_s * 10.0**(0.4*(alpha+1)*(M_s-M) ) * \
         np.exp( -10.0**( 0.4*(M_s-M) ) )
   
+
+def BH_mass_func(MBH):
+    '''
+    density per unit log(Mbh), h=0.7
+    from Eq 4 of Shankar+04 (doi:10.1111/j.1365-2966.2004.08261.x)
+    '''
+    phistar = 7.7e-3
+    Mstar = 6.4e7
+    alpha=-1.11 
+    beta = 0.49
+    return phistar * (MBH/Mstar)**(alpha+1)*np.exp(-(MBH/Mstar)**beta)
+
 
 def deVau(r, r_mid=1):
     '''

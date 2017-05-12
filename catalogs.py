@@ -124,6 +124,7 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
 
         if len(lines)<=2:
             print 'no sources found, for ra,dec:', ra, dec
+            out_list.append(None)
         else:
             data = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
             out_list.append(data)
@@ -134,12 +135,17 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
     if len(out_list)==1:
         out = out_list[0]
 
+    # this loop can be made more robust, 
     if len(out_list)>1:
-        data_arr = np.repeat(out_list[0],1)
+        data_arr = np.repeat(out_list[0],1) # because here we assume the first entry yielded a match.
         for dd in out_list[1:]:
-            data_arr = rec.merge_rec(data_arr, np.repeat(dd,1))
+            if dd is not None:
+                data_arr = rec.merge_rec(data_arr, np.repeat(dd,1))
+            else:
+                data_arr = rec.merge_rec(data_arr, np.zeros(1,dtype=data_arr[0].dtype))
             #data_arr =  np.concatenate(data_arr, dd)
         out= data_arr
+
 
     if name: 
         if not(silent):
