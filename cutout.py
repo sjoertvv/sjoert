@@ -10,8 +10,6 @@ import os
 import astropy.wcs as pywcs
 from astropy.io import fits as pyfits
 
-from stellar import iau_name
-
 def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
            writepdf=False, writefits=False, silent=False):
     '''
@@ -122,8 +120,13 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
         outname = filename
         for srm in srem: outname=outname.split(srm)[0]
         if filename =='':
-            print 'warning, not filename given pdf or fits file, using IAU name'
+            print 'warning, not filename given pdf or fits file, trying to use IAU name function from sjoert.stellar'
+            try:
+                from stellar import iau_name
             outname = iau_name(center[0], center[1])
+            except ImportError
+                print '''import failed, using "image" as filename'''
+                filename = 'image'
         if not silent: print 'base for output file:', outname
             
 
