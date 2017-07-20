@@ -123,7 +123,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
             try:
                 from stellar import iau_name
                 outname = iau_name(center[0], center[1])
-            except ImportError
+            except ImportError:
                 print '''import failed, using "image" as filename'''
                 outname = 'image'
         if not silent: print 'base for output file:', outname
