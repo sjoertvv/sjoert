@@ -8,13 +8,10 @@ from matplotlib import pyplot as plt
 import os 
 
 import astropy.wcs as pywcs
-from io import pyfits
-
-
+from astropy.io import fits as pyfits
 
 from stellar import iau_name
 
-# input
 def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
            writepdf=False, writefits=False, silent=False):
     '''

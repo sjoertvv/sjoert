@@ -194,7 +194,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
 
     output:  
      - xmid  (N) the mean value of x for each bin  
-     - ymid  (4,N) the median/mean/total value, uncertainty/dispersion, number in bin. 
+     - ymid  (4,N) containing the [median/mean/total value, uncertainty/dispersion, number in bin, std of xbin]
 
     input:
      - x,y  equal length arrays
@@ -225,7 +225,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
         x_bins = bins
 
     xmid = np.zeros(len(x_bins)-1)
-    ymid = np.zeros((4,len(x_bins)-1))
+    ymid = np.zeros((5,len(x_bins)-1))
 
     for i in np.arange(len(xmid)):
 
@@ -233,9 +233,10 @@ def binthem(x, y, yerr=None, bins=10, range=[],
         if i == (len(xmid)-1): # close last bin
             ibin = np.where((x>=x_bins[i]) & (x<=x_bins[i+1]))[0]
 
-        xmid[i] = np.mean(x[ibin])
-
         if len(ibin)>0:
+
+            xmid[i] = np.mean(x[ibin])
+            ymid[4,i] = np.std(x[ibin])
     
             y_arr = y[ibin]
             ymid[3,i] = len(ibin)
@@ -263,10 +264,11 @@ def binthem(x, y, yerr=None, bins=10, range=[],
                 ii = np.arange(len(ibin))
                 ymid[1,i] = np.abs(ymid[0,i]-np.interp( (cl/2.-0.5)*len(ibin), ii, y_arrs))
                 ymid[2,i] = np.abs(ymid[0,i]-np.interp( (cl/2.+0.5)*len(ibin), ii, y_arrs))
-
+        else:
+            xmid[i] = (x_bins[i] +x_bins[i+1])/2.
 
         if not silent:
-            print '{0:0.2f} - {1:0.2f}  {2:0.0f}  [{3:0.2f}  {4:0.2f}  {5:0.2f}]'.format(x_bins[i],x_bins[i+1], ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i])
+            print '{0:0.2f} - {1:0.2f} ({2:0.2f})  {3:0.0f}  [{4:0.2f}  {5:0.2f}  {6:0.2f}]'.format(x_bins[i],x_bins[i+1], np.std(x[ibin]), ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i])
 
     return xmid, ymid
 
