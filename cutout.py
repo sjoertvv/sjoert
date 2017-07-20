@@ -26,9 +26,8 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
     optional input:
      - pix input center and im_size are in pixel units
      - writepdf='name.pdf' or True (write filename_sub.pdf)
-     - writefits='name.fits' or True (fileanme+sub.fits
-
-    the creation of new WCS header doesnt seem to work for all cases...
+     - writefits='name.fits' or True (fileanme+sub.fits). Not that the creation of 
+       new WCS header doesnt seem to work for all cases.
     '''
 
     if (filename=='') and not(hdu):
@@ -120,13 +119,13 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
         outname = filename
         for srm in srem: outname=outname.split(srm)[0]
         if filename =='':
-            print 'warning, not filename given pdf or fits file, trying to use IAU name function from sjoert.stellar'
+            print 'warning, no filename given pdf or fits file, trying to use IAU name function from sjoert.stellar'
             try:
                 from stellar import iau_name
-            outname = iau_name(center[0], center[1])
+                outname = iau_name(center[0], center[1])
             except ImportError
                 print '''import failed, using "image" as filename'''
-                filename = 'image'
+                outname = 'image'
         if not silent: print 'base for output file:', outname
             
 
