@@ -19,7 +19,11 @@ except ImportError:
 import astropy.cosmology as cospy
 
 # import some useful stuff from pyspherematch's util.starutil_numpy
-from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
+try:
+    from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
+except ImportError:
+    print 'starutil_numpy not found on system' 
+
 
 import numpy as np
 from numpy import floor, double

@@ -7,9 +7,9 @@ import os
 
 
 # the catalogs
-catdir = os.environ['HOME']+'/project/catalogs/'
-metadir = os.environ['HOME']+'/project/meta/'
-fltdir = os.environ['HOME']+'/project/meta/filters/'
+catdir = os.environ['HOME']+'/Documents/project/catalogs/'
+metadir = os.environ['HOME']+'/Documents/project/meta/'
+fltdir = os.environ['HOME']+'/Documents/project/meta/filters/'
 
 nvdir = catdir+'NVSS/'
 sudir = catdir+'SUMSS/'
@@ -19,11 +19,11 @@ fidir = catdir+'FIRST/'
 
 
 # project specific folders
-frankdir = os.environ['HOME']+'/project/frank/'
+frankdir = os.environ['HOME']+'/Documents/project/frank/'
 frdir = frankdir+'Frank/'
 
 # dir for latex scripts
-latexdir= os.environ['HOME']+'/latex/'
+latexdir= os.environ['HOME']+'/Documents/latex/'
 
 def mkdir(dir):
     if not(os.path.isdir(dir)):

@@ -21,7 +21,7 @@ try:
     import sqlcl 
 except ImportError:
     print 'sqlcl not found, get_SDSS() will fail'
-    print 'get it from: http://skyserver.sdss.org/dr12/en/help/download/sqlcl/pub/sqlcl.py'
+    print 'get it from: http://cas.sdss.org/dr7/en/help/download/sqlcl/'
 
 
 # change this variable to change the default input to all NED functions
