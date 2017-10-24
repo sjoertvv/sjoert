@@ -287,9 +287,9 @@ def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
         if len(names) != ncols:
             print 'names not equal to number of collumns:', ncols, names
             return
-        f.writelines('#')
+        f.writelines('# ')
         for n in names:
-            f.writelines(' '+n)
+            f.writelines('{0:8}'.format(n)+delimiter)
         f.writelines('\n')
     
     
@@ -300,7 +300,7 @@ def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
     #write body
     for i in range(nrows):
         for j, c in enumerate(cols[0:]):
-            f.writelines(str(c[i]) + delimiter[j])
+            f.writelines(('{0:7.3e}'.format(c[i])) + delimiter[j])
         f.writelines('\n')
     f.close()
     

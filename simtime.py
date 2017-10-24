@@ -3,7 +3,7 @@ functions from starutil_numpy (Dustin Lang),
 plus stackoverflow
 '''
 import datetime
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 import time
 
 import numpy as np
@@ -54,4 +54,12 @@ def datetoyear(date):
     fraction = yearElapsed/yearDuration
 
     return date.year + fraction
+
+
+def yeartodate(start):
+    year = int(start)
+    rem = start - year
+
+    base = dt(year, 1, 1)
+    return base + timedelta(seconds=(base.replace(year=base.year + 1) - base).total_seconds() * rem)
 
