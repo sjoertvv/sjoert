@@ -492,47 +492,6 @@ def tundo(Mr):
     log_mass = (Mr+22)*slope +8.69 
     return 10**log_mass
 
-def MBH_scaling(bulge_mass, scat=0, 
-        do_McConnellMa=True,
-        do_HarningRix=False, 
-        do_KormendyHo=False):
-    '''
-    Container with scaling relations between bulge mass (dynamical or stellar)
-    and black hole mass. Input and output in solar mass (linear scale).
-
-    do_McConnellMa (default):
-        McConnell & Ma (2013), based on stellar mass of the bulge
-
-    do_HarningRix:
-      Harning and Rix (2008) relation with bulge dynamical mass.
-    
-    do_KormendyHo:
-        Kormendy & Ho (2014), Eq. 10, based on fixed K-band M/L
-
-
-    optional input:
-     scat=0.2 to add 0.2 dex scatter (default is zero)
-     
-    '''
-
-    if scat>0:
-        MBH_scat = np.random.normal(0, scat, size=len(bulge_mass))
-    else:   
-        MBH_scat = 0.
-    
-    if do_KormendyHo:
-        norm = 8.69 # +/- 0.05
-        slope = 1.16 # +/- 0.08
-    elif do_HarningRix:
-        norm = 8.20 # +/- 0.1
-        slope = 1.12 # +/- 0.06
-    elif do_McConnellMa:
-        norm = 8.46 
-        slope = 1.05
-
-    return 10**(norm + MBH_scat + slope* np.log10(bulge_mass/1e11))
-
-
 
 def beta2gamma(beta):
     return (1-beta**2)**(-0.5)
@@ -607,19 +566,28 @@ def Rs(Mbh):
     '''
     return 2*Mbh*2e30*6.7e-11/9e16 *1e2 # cm
 
-def Msigma(sigma, source='McConnellMa13'):
+default_source = 'Gultekin09'
+def MBH_sigma(sigma, source=default_source):
     '''
-    give sigma in km/s, return Mbh in Msun
+    Container with scaling relations between (central!) velocity dispersion
+    and black hole mass. Input in km/s output in solar mass (linear scale).
     
-    source=''
-    'McConnellMa13': default 
-    'Gultekin06': using relation for 'all' galaxies, w internal scatter 0.44 dex 
-    'KH14': Kormendy and Ho (2014) M-sigma relation, obtaining after selecting elliptical galaxies
+    source=
+     'Gultekin09': 
+        using relation for 'all' galaxies, with internal scatter 0.44 dex 
+
+     'McConnellMa13': 
+        McConnell & Ma 2013
+
+     'KormendyHo14': 
+        Kormendy and Ho (2014) M-sigma relation, obtaining after selecting elliptical galaxies
+    
     '''
-    if source == 'Gultekin06':
+
+    if source == 'Gultekin09':
         return 10**8.13*(sigma/200.)**4.24
 
-    if source=='KH14':
+    if source=='KormendyHo14':
         return 10**8.5*(sigma/200.)**4.4 # in Msun
 
     if source=='McConnellMa13':
@@ -628,20 +596,54 @@ def Msigma(sigma, source='McConnellMa13'):
     if source=='FerrareseFord05':
         return 1.66e8 * (sigma/200.)**4.86
                  
+    raise Exception('source for M-sigma relation not recognized, returning None')
 
-    print 'source for M-sigma relation unknown, returning None'
-
-def BH_influence(sigma):
+def MBH_mass(bulge_mass,source=default_source):
     '''
-    give sigma in km/s, return sphere of influence in cm
-    '''
-    return G * Msun * Msigma(sigma) / (sigma*1e5)**2 # this is propto sigma^2.4
+    Container with scaling relations between bulge mass (dynamical or stellar)
+    and black hole mass. Input and output in solar mass (linear scale).
 
-def schechter(M, h=0.72, paper='Blanton03'):
+    source = 
+     'Gultekin09':
+        Using their M-L relation for ellipicals and own estimate of L_g~M^1.05, renormaized such that M-sigma relation is matched for NYU-VAGC galaxies
+     
+     'McConnellMa':
+        McConnell & Ma (2013), based on stellar mass of the bulge
+
+     'HaringRix04':
+        Harning and Rix (2004) relation with bulge dynamical mass.
+    
+     KormendyHo14:
+        Kormendy & Ho (2014), Eq. 10, based on fixed K-band M/L, obtained using only E-gals
+     
+    '''
+
+    if source =='KormendyHo14':
+        norm = 8.69 # +/- 0.05
+        slope = 1.16 # +/- 0.08
+    elif source=='HaringRix04':
+        norm = 8.20 # +/- 0.1
+        slope = 1.12 # +/- 0.06
+    elif source=='McConnellMa13':
+        norm = 8.46 
+        slope = 1.05
+    elif source =='Gultekin09':
+        norm = 8.95-(0.47*(1.11+0.05)) # = 8.40
+        slope = (1.11+0.05) # 1.16
+
+    else:
+        raise Exception('source for relation not recognized, returning None')
+
+    return 10**(norm + slope* np.log10(bulge_mass/1e11))
+
+
+
+
+def schechter(M, h=0.70, paper='Blanton03'):
     '''
     the Schelter function for the 
-    possible papers: r-band: Blanton01  (default)
-                               K-band: Simth09, Bell03, Cole01, Kochanek01, Jone06
+    possible papers: r-band: Blanton03  (default), Blanton01
+                     K-band: Simth09, Bell03, Cole01, Kochanek01, Jone06
 
     >> rho  = schechter([-22, -23], h=0.72, paper='Blanton01')
     '''
@@ -659,44 +661,74 @@ def schechter(M, h=0.72, paper='Blanton03'):
         alpha = -1.05
         psi_s = 1.49e-2 *h**3
 
-    if paper== 'Blanton01_gband':
+    elif paper== 'Blanton01_gband':
         M_s = -20.04 + 5*np.log10(h)
         alpha = -1.26
         psi_s = 2.06e-2 *h**3
 
-    if paper== 'Gaia':
+    elif paper== 'Gaia':
         M_s = -20.04 + 5*np.log10(h)
         alpha = -1.0
         psi_s = 4e-3 *h**3
 
-    if paper == 'Smith09': # K-band
+    elif paper == 'Smith09': # K-band
         M_s = -23.19 + 5*np.log10(h)
         alpha = -0.81
         psi_s = 0.0166 *h**3
 
-    if paper == 'Bell03': # K-band, valid for bright-end only...
+    elif paper == 'Bell03': # K-band, valid for bright-end only...
         M_s = - 23.33 + 5*np.log10(h)
         alpha = (-0.88)
         psi_s = 0.0149 *h**3
 
-    if paper == 'Cole01': # 2001MNRAS.326..255C
+    elif paper == 'Cole01': # 2001MNRAS.326..255C
         M_s = - 23.44 + 5*np.log10(h)
         alpha = -0.96
         psi_s = 0.0108 *h**3
 
-    if paper == 'Kochanek01': #2001ApJ...560..566K 
+    elif paper == 'Kochanek01': #2001ApJ...560..566K 
         M_s = - 23.39 + 5*np.log10(h)
         alpha = -1.09
         psi_s = 0.0116 *h**3
 
-    if paper == 'Jones06': #2006MNRAS.369...25J
+    elif paper == 'Jones06': #2006MNRAS.369...25J
         M_s = - 23.83 + 5*np.log10(h)
         alpha = -1.16
         psi_s = 10**(-2.126) *h**3
+    else:
+        raise Exception('source/paper for Schechter function not recognized')
+
 
     
     return 0.4*np.log(10) * psi_s * 10.0**(0.4*(alpha+1)*(M_s-M) ) * \
         np.exp( -10.0**( 0.4*(M_s-M) ) )
+
+
+def schechter_schechter(mass, source='Baldry12'):
+    '''
+    double Schechter function, used for the galaxy mass distributoin
+    input: mass in Msun (linear)
+    returns: galaxy density in units Mpc^-3 dex^-1
+    '''
+    if source=='Baldry12': #h=0.7, z<0.05
+        m_star = 10**10.66
+        phi1 = 3.96e-3
+        alpha1 = -0.35
+        phi2 = 0.79e-3
+        alpha2 = -1.47
+    elif source=='Wright12': #h=0.7, z~0.1
+        m_star = 10**10.78
+        phi1 = 2.93e-3
+        alpha1 = -0.62
+        phi2 = 0.63e-3
+        alpha2 = -1.50        
+    else:
+        raise Exception('source for function not recognized')
+        return
+        
+
+    return np.log(10) * np.exp(-mass/m_star) * ( phi1*(mass/m_star)**(alpha1+1) + phi2*(mass/m_star)**(alpha2+1))
+
   
 
 def BH_mass_func(MBH):
@@ -709,6 +741,14 @@ def BH_mass_func(MBH):
     alpha=-1.11 
     beta = 0.49
     return phistar * (MBH/Mstar)**(alpha+1)*np.exp(-(MBH/Mstar)**beta)
+
+
+def BH_influence(sigma):
+    '''
+    give sigma in km/s, return sphere of influence in cm
+    '''
+    return G * Msun * MBH_sigma(sigma) / (sigma*1e5)**2 # this is propto sigma^2.4
+
 
 
 def deVau(r, r_mid=1):
