@@ -33,7 +33,11 @@ NEDdir = dirs.catdir+'NED/'
 NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?objname=_SOURCE_&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO"'
 NEDurl_radec = '''http://ned.ipac.caltech.edu/cgi-bin/objsearch?search_type=Near+Position+Search&in_csys=Equatorial&in_equinox=J2000.0&lon=_RA_d&lat=_DEC_d&radius=_RAD_&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&z_constraint=Unconstrained&z_value1=&z_value2=&z_unit=z&ot_include=ANY&nmp_op=ANY&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=Distance+to+search+center&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO'''
 
-SDSSurl_radec = '''"http://skyserver.sdss.org/dr12/en/tools/search/x_radial.aspx?whichway=equitorial&ra=__RA__&dec=__DEC__&radius=__RAD__&min_u=0&max_u=20&min_g=0&max_g=20&min_r=0&max_r=20&min_i=0&max_i=20&min_z=0&max_z=20&format=csv&limit=100000"'''
+
+#SDSSurl_radec = '''"http://skyserver.sdss.org/dr12/en/tools/search/x_radial.aspx?whichway=equitorial&ra=__RA__&dec=__DEC__&radius=__RAD__&min_u=0&max_u=20&min_g=0&max_g=20&min_r=0&max_r=20&min_i=0&max_i=20&min_z=0&max_z=20&format=csv&limit=100000"'''
+SDSSurl_radec = '''"http://skyserver.sdss.org/dr12/en/tools/search/x_results.aspx?searchtool=Radial&uband=&gband=&rband=&iband=&zband=&jband=&hband=&kband=&TaskName=Skyserver.Search.Radial&whichphotometry=optical&coordtype=equatorial&ra=__RA__&dec=__DEC__&radius=__RAD__&min_u=0&max_u=23&min_g=0&max_g=23&min_r=0&max_r=23&min_i=0&max_i=23&min_z=0&max_z=23&min_j=0&max_j=23&min_h=0&max_h=23&min_k=0&max_k=23&format=csv&TableName=&limit=1000"'''
+
+
 
 SDSS_cas=\
 " select p.* \n from photoobjall p, dbo.fgetNearByObjEq(__RA__,__DEC__,__RAD__) n \n where p.objid=n.objid "
@@ -83,11 +87,12 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     
     return data
 
+
 def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
     '''
-    >> data = get_SDSS(ra, dec, rad=1, dir='./' name='mydata')
+    >> data = get_SDSS(ra, dec, rad=1, dir='./' name='mydata', debug=False)
 
-    submit CAS job via sqlcl
+    submit CAS job via sqlcl/sciserver
     input:
      ra, dec (deg), can be arrays
     optional input:
@@ -100,6 +105,8 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
      to upload coordinates and run fgetNearByObjEq on this list. 
 
     '''
+    from sciserver.casjobs import CasJobs
+
     if np.isscalar(ra0):
         ra0 = [ra0]
         dec0 = [dec0]
@@ -111,7 +118,9 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
         if not(silent):
             print 'running CASjob:\n',cas
 
-        result = sqlcl.query(cas)
+        #result = sqlcl.query(cas) # not supported anymore?
+        cas = CasJobs()
+        result = cas.executeQuery(sql=cas, context="MyDB", outformat="fits") # also fails
 
         if not(silent):
             print 'CAS job done, now reading query...'
@@ -388,7 +397,6 @@ def get_dss(ra, dec, size=1/60., name=None, sdir=None, color='red',
 
     args = shlex.split(command_line)
     if debug: print  args
-    #p3 = subprocess.call('dss2 red -i /Users/sjoertvanvelzen/Documents/project/catalogs/DSS/fits/sjoert.in', shell=True)
     proc = subprocess.Popen(args, cwd=sdir, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
 

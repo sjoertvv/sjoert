@@ -63,3 +63,7 @@ def yeartodate(start):
     base = dt(year, 1, 1)
     return base + timedelta(seconds=(base.replace(year=base.year + 1) - base).total_seconds() * rem)
 
+
+def yeartomjd(start):
+    return datetomjd(yeartodate(start))
+

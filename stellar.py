@@ -734,7 +734,7 @@ def schechter_schechter(mass, source='Baldry12'):
 def BH_mass_func(MBH):
     '''
     density per unit log(Mbh), h=0.7
-    from Eq 4 of Shankar+04 (doi:10.1111/j.1365-2966.2004.08261.x)
+    from Eq 4 of Shankar+04 (http://adsabs.harvard.edu/abs/2004MNRAS.354.1020S)
     '''
     phistar = 7.7e-3
     Mstar = 6.4e7

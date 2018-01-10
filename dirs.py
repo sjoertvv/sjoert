@@ -1,5 +1,5 @@
 '''
-this module is merly a container with directories:
+this module is merely a container with directories:
 catalogs, metadata, or projects
 '''
 

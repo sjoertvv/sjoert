@@ -214,10 +214,9 @@ def rec2fits(rec=None, filename=''):
     
 
     tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
-
-         
-    print 'writing:', filename
+    
     tbhdu.writeto(filename, clobber=True)
+    print 'written:', filename
     return
 
     
