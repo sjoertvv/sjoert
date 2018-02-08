@@ -47,11 +47,15 @@ def readascii(filename='', lines=None, names='', comment='#',
     if filename:
         lines = f.readlines()
 
+    if len(lines)==0:
+        print 'empty file'
+        return None
     l=0
     line = lines[0]
     com_lines.append(line)
+
     
-    while (line[0] == comment) | (len(line) <= 1):
+    while ((line[0] == comment) | (len(line) <= 1)) and (l<len(lines)):
         line = lines[l] #read untill we reach data
         com_lines.append(line)
         l+=1
