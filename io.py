@@ -7,6 +7,101 @@ reading and writing, mostly fits/ascii tables and record arrays
 from astropy.io import fits as pyfits
 import numpy as np
 import pickle
+import json
+
+def json2rec(jin, silent=False, verbose=False):
+    '''
+    take a list of dictionaries from json.read() or a filename, 
+    read all the columns and make one bit python rec array
+    '''
+    if isinstance(jin, basestring):    
+        jdict_list = json.loads(open(jin).read())
+    else:
+        jdict_list = jin
+
+    if type(jdict_list) != list:
+        print 'cant work with this, file is not a list; consider going a level deeper'
+        return None
+
+    # get all the keys and check if they are string or float, or another dict
+    dt_dict = {}
+    for jd in jdict_list:
+        for ku in jd.keys():
+            k = str(ku)
+            
+            # check the type            
+            this_type = type(jd[k])
+        
+            if this_type == unicode:
+                try:
+                    yup = float(jd[k])        
+                    dt = 'f8'                                            
+                except ValueError:
+                    dt = 'S'+str(len(jd[k]))
+            elif this_type==bool:
+                dt = 'i8'
+            # make an exception for entries with two values
+            elif this_type ==list:
+                if len(jd[k])==2:
+                    dt = 'f8'
+            else:
+                dt = '_nofloat'
+            if verbose:
+                print 'key           :', k
+                print 'data          :', jd[k]    
+                print 'current type  :',type(jd[k])        
+                print 'use type      :', dt
+            
+            # add to our dict of dtypes
+            if not dt_dict.has_key(k):
+                dt_dict[k] = dt
+            else:
+                
+                # if we already have this key, make sure the string type is long enough    
+                if dt_dict[k][0]=='S':
+                    if len(jd[k])>float(dt_dict[k][1:]):
+                        dt_dict[k] = 'S'+str(len(jd[k]))            
+                
+                # or if the new dtype is different from the old one, we can't use this key for our table
+                # (can this even happen in proper json tables?)
+                elif (dt != dt_dict[k]) and (dt_dict[k]!='_skip'):
+                    if verbose or not silent:
+                        print 'warning, key with different dtype, skipping this one:', k, jd[k], type(jd[k])
+                        print 'current type', dt_dict[k]
+                        print 'new proposed type', dt
+                    dt_dict[k] = '_skip'
+
+    if verbose or not(silent):
+        print '# of keys', len(dt_dict.keys())
+    if verbose:
+        print dt_dict
+   
+    # make the dtype for the rec array
+    dt_list = []
+    final_keys = []
+    for k in dt_dict.keys():
+        if dt_dict[k][0]!='_':
+            dt_list.append((k,dt_dict[k]))
+            final_keys.append(k)
+
+    if verbose:
+        print 'final dtype:\n',dt_list 
+
+    recarr = np.zeros(len(jdict_list), dtype=dt_list)    
+
+    # loop over all json entries, read
+    for i, jd in enumerate(jdict_list):
+        for k in final_keys:
+            if jd.get(k) is not None:
+                if type(jd.get(k)) == list:                    
+                    recarr[i][k] = (float(jd[k][0])+float(jd[k][1]))/2. # dangerous
+                else:
+                    recarr[i][k] = jd.get(k)
+
+            
+
+    return recarr
+
 
 def readpickle(filename):
    '''
