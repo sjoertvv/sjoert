@@ -106,7 +106,7 @@ def poisson_limits(n_i, conf, silent=False):
 # define a grid of confidence intervals
     conf_grid = np.array([0.8413, 0.90, 0.95, 0.975, 0.9772, 0.990, 0.995, 0.9987, 0.999, 0.9995])
     if (conf < min(conf_grid)) or (conf > max(conf_grid)) :
-        print 'CONF must be in the interval [',min(conf_grid),'-',max(conf_grid),']'
+        print ('CONF must be in the interval [',min(conf_grid),'-',max(conf_grid),']')
         return -1.0
     
 

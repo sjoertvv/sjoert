@@ -29,8 +29,8 @@ except ImportError:
 import numpy as np
 from numpy import floor, double
 
-import sdss, swift
-from simtime import * # for backward comp
+from . import sdss, swift
+from sjoert.simtime import * # for backward comp
 
 
 # Some Physical constants (cgs)

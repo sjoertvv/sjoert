@@ -12,10 +12,10 @@ import os, time, re
 import numpy as np
 import shlex, subprocess
 
-import dirs
-import rec
-from io import readascii, pyfits
-from stellar import iau_name
+import sjoert.dirs as dirs
+import sjoert.rec as rec
+from sjoert.io import readascii, pyfits
+from sjoert.stellar import iau_name
 
 try:
     import sqlcl 
@@ -283,7 +283,7 @@ def download_NED(name=None, ra=None, dec=None, rad=None, local_name=None,
                    lines[i].split('REF=')[1].split('TARGET')[0].strip()+'"'
 
             com = ' wget '+link+' -O  '+NEDdir + SEDpage_name+'.html'
-            print 'pasing to command line  :\n', com, ' \n\n'
+            print ('pasing to command line  :\n', com, ' \n\n')
             os.system(com)
             return
 
