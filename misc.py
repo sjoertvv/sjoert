@@ -25,7 +25,8 @@ def rebin(a, *args):
 
 def bino_rebin(t, a, binwidth):
     '''
-    a,t = bino_rebin(t, a, binwidth)
+    >>> a,t = bino_rebin(t, a, binwidth)
+    
     rebin array a[t] using binwidth of t
     size has to be 2**n
     '''
@@ -34,7 +35,7 @@ def bino_rebin(t, a, binwidth):
     if nn != len(t):
         raise ValueError('t and a need to have same dimension')
     if np.log2(nn) / np.floor(np.log2(nn))  !=1:
-        print 'len(a):', nn
+        print('len(a):', nn)
         raise ValueError('input array needs to be binomial (2**n)')
 
     dt = t[2] - t[1]

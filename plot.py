@@ -188,7 +188,7 @@ def bovy_dens2d(x,y, *args,**kwargs):
   try:
     import bovy_plot
   except ImportError:
-    print 'Import bovyplot failed'
+    print('Import bovyplot failed')
 
   if kwargs.has_key('xrange'):
       xrange=kwargs['xrange']

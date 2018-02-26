@@ -25,11 +25,11 @@ def f2latex(flt, nd=1, debug=False):
             nd-=1
         
         num = f/10**base
-        if debug: print 'num, base', num,base
+        if debug: print ('num, base', num,base)
         if (num < 1):
             base-=1
             num = f/10**base
-            if debug: print 'new num base', num, base
+            if debug: print ('new num base', num, base)
 
 #        if (abs(base)==1):
 #            nd+=1
@@ -119,14 +119,14 @@ def table(cols, names=None, units=None, ndeci=1, \
     '''
     if names:
         if len(cols) != len(names):
-            print 'error, len(cols) != len(names):', len(cols), len(names)
-            return
+            raise Exception('error, len(cols) != len(names):', len(cols), len(names))
+            return None
 
     if np.isscalar(ndeci): 
         ndeci = np.repeat(ndeci, len(cols))
 
     if len(ndeci) != len(cols):
-        print 'error, len(ndeci) != len(cols)'
+        raise Exception('error, len(ndeci) != len(cols)')
         return
             
     if filename:
@@ -160,11 +160,11 @@ def table(cols, names=None, units=None, ndeci=1, \
         if filename:
             f.writelines(ss)
         else:
-            print ss
+            print (ss)
         if filename:
             f.writelines('\\hline \\hline \n')
         else:
-            print '\\hline \\hline'
+            print ('\\hline \\hline')
 
     # make the body
     for i in range(len(cols[0])):
@@ -186,7 +186,7 @@ def table(cols, names=None, units=None, ndeci=1, \
         if filename:
             f.writelines(ss+'\n')
         else:
-            print ss
+            print (ss)
 
     if bottom:
         f.writelines(bottom)
