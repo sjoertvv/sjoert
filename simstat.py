@@ -32,7 +32,6 @@ def mc_dice(array, nsucces=1):
     find the probability to *at least* nsucces from array for probabilities to succes
     '''
     ntry = 5000*(max(len(array),2))
-    #print 'drawing', len(array)*ntry, 'randon numbers'
     uni = rand(ntry*len(array))
 
     outcome = np.zeros(ntry)
@@ -92,15 +91,15 @@ def poisson_limits(n_i, conf, silent=False):
     S. van Velzen, 2012 Jan 18, Radboud - converted to python
     '''
     if not(np.isscalar(n_i)) or not(np.isscalar(conf)):
-        print 'N_I and CONF must be scalars'
-        return -1.0
+        print('N_I and CONF must be scalars')
+        return None
     
     if (n_i < 0.0) :
-        print 'N_I must be positive!'
-        return -1.0
+        print('N_I must be positive')
+        return None
 
     if n_i == 0:
-        if not(silent): print 'poisson_limits:: n_i==0, returning [0,2.4]'
+        if not(silent): print('poisson_limits:: n_i==0, returning [0,2.4]')
         return np.array([0.,2.4])
     
     
@@ -149,17 +148,17 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, return_zero=Fa
 #  make python histrogram
     isfin = np.where(np.isfinite(arr)==True)[0]
     if len(isfin)==0:
-        print 'all bins are inf/nan?'
+        print('all bins are inf/nan?')
         return None
     hh = np.histogram(arr[isfin], bins=bins, range=range, normed=False)
 
     if not(silent):
-        print 'number in bins', hh[0]
+        print('number in bins', hh[0])
     ipos= np.where(hh[0]>0)[0]
 
     if (len(ipos) != len(hh[0])) and (return_zero==False):
         if not(silent):
-            print 'warning we have empty bins! skipping these'
+            print('warning we have empty bins! skipping these')
     else:           
         ipos = np.arange(len(hh[0]))
     xx = np.zeros(len(ipos))
@@ -213,7 +212,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
 
     if use_wmean:
         if yerr is None: 
-            print 'ERROR, please give yerr= input when wmean=True'
+            print('ERROR, please give yerr= input when wmean=True')
             return
 
     if np.isscalar(bins):
@@ -268,7 +267,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
             xmid[i] = (x_bins[i] +x_bins[i+1])/2.
 
         if not silent:
-            print '{0:0.2f} - {1:0.2f} ({2:0.2f})  {3:0.0f}  [{4:0.2f}  {5:0.2f}  {6:0.2f}]'.format(x_bins[i],x_bins[i+1], np.std(x[ibin]), ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i])
+            print('{0:0.2f} - {1:0.2f} ({2:0.2f})  {3:0.0f}  [{4:0.2f}  {5:0.2f}  {6:0.2f}]'.format(x_bins[i],x_bins[i+1], np.std(x[ibin]), ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i]))
 
     return xmid, ymid
 
@@ -358,21 +357,21 @@ def unbinned_gauss(arr, sigma_cut=10, verbose=False):
         for i,m in enumerate(mean_arr):            
             likel[i,j] = np.sum(np.max([this_max, np.log(Gauss(arr, mu=m, sigma=s))],axis=0))
             #likel[i,j] = np.sum(np.log(Gauss(arr, mu=m, sigma=s)))
-            #print i,j,m,s,likel[i,j],sum(np.log(Gauss(arr, mu=m, sigma=s))<this_max[0])
+            #print(i,j,m,s,likel[i,j],sum(np.log(Gauss(arr, mu=m, sigma=s))<this_max[0]))
 
     mxl = np.where(likel == np.max(likel))
     
     if verbose: 
-        print mxl[0],mxl[1]
+        print(mxl[0],mxl[1])
     
     if len(mxl[0])>1:
-        print 'unbinned_gaus, WARNING: more than one max likelihood, please check input'
-        print mxl
+        print('unbinned_gaus, WARNING: more than one max likelihood, please check input')
+        print(mxl)
 
     elif (mxl[0]==0) or (mxl[1]==0) or \
         (mxl[0]==0) or (mxl[1]==0):
-        print 'unbinned_gaus, WARNING: we hit an edge of sigma or mean array, please check input'
-        print mxl
+        print('unbinned_gaus, WARNING: we hit an edge of sigma or mean array, please check input')
+        print(mxl)
 
     return mean_arr[mxl[0]][0], sigma_arr[mxl[1]][0]
 
@@ -381,10 +380,10 @@ def test_unbinned():
         tt = np.append(np.random.normal(size=10**x), np.random.normal(-1, 5, size=10**x/5))
         m, s = unbinned_gauss(tt, sigma_cut=3)
 
-        print 'N true gauss',int(10**x), '  N false gauss', int(10**x/8)
-        print 'mean, median, likel  :',np.mean(tt), np.median(tt), m
-        print 'std, mad*1.483, likel:', np.std(tt), mad(tt)*1.4826, s
-        print ''
+        print('N true gauss',int(10**x), '  N false gauss', int(10**x/8))
+        print('mean, median, likel  :',np.mean(tt), np.median(tt), m)
+        print('std, mad*1.483, likel:', np.std(tt), mad(tt)*1.4826, s)
+        print('')
 
 
 

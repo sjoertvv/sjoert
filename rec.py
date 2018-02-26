@@ -18,7 +18,7 @@ def list2rec(dd, n=1, default=False):
     
     for el in dd:
         this_type  = np.array(el[1]).dtype
-        print el[1], this_type
+        print(el[1], this_type)
         pre_dtype+= [(el[0], this_type)]
     newrec = np.empty(n ,dtype=np.dtype(pre_dtype))
 
@@ -41,7 +41,7 @@ def dict2rec(dd, n=1, default=False):
     pre_dtype = []
     for k in keys:
         this_type  = np.array(dd[k]).dtype
-        print k, this_type
+        print(k, this_type)
         pre_dtype+= [(k, this_type)]
     newrec = np.empty(n ,dtype=np.dtype(pre_dtype))
 
@@ -66,7 +66,7 @@ def slice_cols(ori_rec, sub_cols):
     for n in sub_cols:
         ii = np.where(np.asarray(ori_rec.dtype.names) == n)[0]
         if not(len(ii)):
-            print 'error: sub_col not found in input rec:', n
+            print('error: sub_col not found in input rec:', n)
             raise(IndexError)
         new_dtype.append(full_dtype[ii])
 
@@ -100,7 +100,7 @@ def merge_rec(d1,d2):
             d2[key]
             newrec[key] = np.concatenate((d1[key], d2[key]))
         except ValueError:
-            print 'waring '+ key+ ' not found in d2, putting this column to zero in output'
+            print('waring '+ key+ ' not found in d2, putting this column to zero in output')
             newrec[key] =0.
     return newrec
 
@@ -134,7 +134,7 @@ def append_rows(rec, rows):
     the order has to match the order of the orinigal rec
     '''
     if (type(rows[0]) != tuple):
-        print 'Waring. rows are not an array of tuple(s).'
+        print('Waring. rows are not an array of tuple(s).')
         
     d2 = np.array(rows, dtype=rec.dtype.descr)
     return merge_rec(rec, d2)

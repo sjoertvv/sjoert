@@ -20,8 +20,8 @@ from stellar import iau_name
 try:
     import sqlcl 
 except ImportError:
-    print 'sqlcl not found, get_SDSS() will fail'
-    print 'get it from: http://cas.sdss.org/dr7/en/help/download/sqlcl/'
+    print('sqlcl not found, get_SDSS() will fail')
+    print('get it from: http://cas.sdss.org/dr7/en/help/download/sqlcl/')
 
 
 # change this variable to change the default input to all NED functions
@@ -67,7 +67,7 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
 
     com = '''curl '''+url+''' > ''' +dir+name
 
-    if not silent: print com
+    if not silent: print(com)
 
     os.system(com)
     
@@ -75,14 +75,14 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     f = open(dir+name,'r')
     lines = ''
     for l in f.readlines():
-        #print l
+        #print(l)
         if l.count('#Table2')==1: 
             break
         lines+=l
 
     lines= lines.split('\n')
-    print lines[1]
-    print lines[2:]
+    print(lines[1])
+    print(lines[2:])
     data = readascii(lines=lines[2:], delimiter=',', names=lines[1].split(','))
     
     return data
@@ -92,7 +92,9 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
     '''
     >> data = get_SDSS(ra, dec, rad=1, dir='./' name='mydata', debug=False)
 
-    submit CAS job via sqlcl/sciserver
+    submit CAS job via sqlcl/sciserver, but this may not work anymore
+
+
     input:
      ra, dec (deg), can be arrays
     optional input:
@@ -116,23 +118,22 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
         cas = SDSS_cas.replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad*60))
     
         if not(silent):
-            print 'running CASjob:\n',cas
+            print('running CASjob:\n',cas)
 
         #result = sqlcl.query(cas) # not supported anymore?
         cas = CasJobs()
         result = cas.executeQuery(sql=cas, context="MyDB", outformat="fits") # also fails
 
         if not(silent):
-            print 'CAS job done, now reading query...'
+            print('CAS job done, now reading query...')
 
-        #print result.readlines()
         lines = result.readlines()
 
         if debug:
-            print ra, dec, lines
+            print(ra, dec, lines)
 
         if len(lines)<=2:
-            print 'no sources found, for ra,dec:', ra, dec
+            print('no sources found, for ra,dec:', ra, dec)
             out_list.append(None)
         else:
             data = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
@@ -158,8 +159,8 @@ def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
 
     if name: 
         if not(silent):
-            print '# of entries:', len(out)
-            print 'writing to ', name
+            print('# of entries:', len(out))
+            print('writing to ', name)
         pyfits.writeto(name, out, clobber=True)
     
     return out
@@ -180,8 +181,8 @@ def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=Fa
     fname  = NEDdir+local_name+'.html'
     
     if not(os.path.isfile(fname)):
-        print fname
-        print 'not on disk, sendig query to NED'
+        print(fname)
+        print('not on disk, sendig query to NED')
     
     if not(os.path.isfile(fname)) or redo:
         download_NED(name=name, ra=ra,dec=dec, rad=rad, local_name=local_name, NEDdir=NEDdir)
@@ -201,7 +202,7 @@ def read_NED_mainpage(page_name, verbose=False, NEDdir=NEDdir):
     name = None
     while i<len(lines):
         if re.search('INDEX for', lines[i]):
-            if verbose: print lines[i]
+            if verbose: print(lines[i])
             name = lines[i].split('INDEX for')[1].split('</td')[0].strip()
         i+=1
 
@@ -251,13 +252,13 @@ def download_NED(name=None, ra=None, dec=None, rad=None, local_name=None,
         command_line = "wget '"+NEDurl_radec.replace('_RA_', str(ra)[0:9]).replace('_DEC_', str(dec)[0:9]).replace('_RAD_', str(rad*60))+ \
           "' -O "+NEDdir+local_name+'.html'
 
-    print command_line
+    print(command_line)
     args = shlex.split(command_line)
 
     if debug:
-        print 'pasing to command line  :\n', command_line,' \n\n'
-        print  args
-        print 'NEDdir:', NEDdir
+        print('pasing to command line  :\n', command_line,' \n\n')
+        print( args)
+        print('NEDdir:', NEDdir)
         
     #proc = subprocess.Popen(args cwd=NEDdir, stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
     p = subprocess.call(command_line, shell=True)
@@ -273,7 +274,7 @@ def download_NED(name=None, ra=None, dec=None, rad=None, local_name=None,
 
     while i<len(lines):
 
-        if debug: print lines[i]
+        if debug: print(lines[i])
 
         # get the link to the SED page
         if (re.search('Photometric', lines[i])):
@@ -289,7 +290,7 @@ def download_NED(name=None, ra=None, dec=None, rad=None, local_name=None,
         i+=1
         
         
-    print 'WARNING No link to SED page found on NED main page.'
+    print('WARNING No link to SED page found on NED main page.')
 
 
 def read_NED_SEDpage(SEDpage_name, NEDdir=NEDdir):
@@ -309,18 +310,14 @@ def read_NED_SEDpage(SEDpage_name, NEDdir=NEDdir):
         if (re.search('A NAME="No', lines[i])):
             i+=3
             lflux = lines[i]
-            #print ' line: ', lflux
             # check if not an upper limit
             if (re.search('=', lflux)):                   
                 lflux = lflux.split('=')[1].split('W')[0].strip()
                 flux.append(float(lflux) *1e23/1e4*1e7)
-                #print 'flux (SI, Jy):',float(lflux), flux
                 i+=3
                 lnu = lines[i]
-                #print ' line:', lnu
                 lnu = lnu.split('=')[1].split('H')[0].strip()
                 nu.append(float(lnu))
-                #print 'nu (Hz)', nu
             
         i+=1
         
@@ -355,7 +352,7 @@ def get_dss(ra, dec, size=1/60., name=None, sdir=None, color='red',
 
     new_name = sdir+name+'.fits'
     if noclobber and os.path.isfile(new_name):
-        print 'not rerunning, reading:', new_name
+        print('not rerunning, reading:', new_name)
         hdu = pyfits.open(new_name)
         return hdu
 
@@ -384,9 +381,9 @@ def get_dss(ra, dec, size=1/60., name=None, sdir=None, color='red',
     command_line = 'dss2 '+color+' -i '+infile_name #+' > '+logfile_name #+' 2> '+ errfile_name
 
     if debug:
-        print sradec
-        print line
-        print command_line
+        print(sradec)
+        print(line)
+        print(command_line)
 
     #p = subprocess.Popen(command_line, shell=True)
     #t = os.popen(command_line)
@@ -396,21 +393,21 @@ def get_dss(ra, dec, size=1/60., name=None, sdir=None, color='red',
     logfile = open(logfile_name, 'r')
 
     args = shlex.split(command_line)
-    if debug: print  args
+    if debug: print(args)
     proc = subprocess.Popen(args, cwd=sdir, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
 
     sleep_time = (size*60)
     if sleep_time <10: sleep_time = 10
-    print 'sleeping for (s):', sleep_time
+    print ('sleeping for (s):', sleep_time)
     time.sleep(sleep_time )
     # at this point we either have an image, or we give up
     proc.terminate()
     
     if proc.wait() < 0:
-        
-        print 'problem with dss call'
-        print 'id:', proc.pid
+      
+        print ('problem with dss call')
+        print ('id:', proc.pid)
         #proc.kill()
         #os.kill(proc.pid,  signal.SIGHUP) # doesn't work ?
         return None
@@ -420,17 +417,17 @@ def get_dss(ra, dec, size=1/60., name=None, sdir=None, color='red',
 
     #stdout_value = proc.communicate()[0]
     stderr_value = proc.stderr.read()
-    print 'stderr:', stderr_value
+    print ('stderr:', stderr_value)
     stdout_value = proc.stdout.read()
 
 
     if debug:
-        print '\n stdout: ', stdout_value
+        print ('\n stdout: ', stdout_value)
 
     lines = (stdout_value).split('\n')
 
     if not(len(lines)):
-        print 'empty log file', logfile_name
+        print ('empty log file', logfile_name)
         return None
 
     i=0
@@ -438,36 +435,36 @@ def get_dss(ra, dec, size=1/60., name=None, sdir=None, color='red',
         i+=1
 
     if i == (len(lines)-3):
-        print 'no info from log file:',logfile_name
+        print ('no info from log file:',logfile_name)
         return None
 
     info_line = lines[i+2].split()
     if len(info_line) < 7:
-        print 'no info on plate id:', info_line
+        print ('no info on plate id:', info_line)
         return None
     
     Pl_Id = lines[i+2].split()[8].swapcase()
-    if debug: print 'Pl_Id:', Pl_Id
+    if debug: print ('Pl_Id:', Pl_Id)
     force_name = sdir+name[0:20]+Pl_Id+'.fits' # max 20 characters...
-    if debug: print 'dss image name:', force_name
+    if debug: print ('dss image name:', force_name)
     
     if change_name:
         os.system('mv '+force_name+' '+new_name)
-        if debug: print 'new name:', new_name
+        if debug: print ('new name:', new_name)
 
         try:
             hdu = pyfits.open(new_name)
-            print 'created:', new_name
+            print ('created:', new_name)
         except IOError:
-            print 'file not created:', new_name
+            print ('file not created:', new_name)
             return None
 
     else: 
         try:
             hdu = pyfits.open(force_name)
-            print 'created:', force_name
+            print ('created:', force_name)
         except IOError:
-            print 'file not created:', force_name
+            print ('file not created:', force_name)
             return None
         
     return hdu

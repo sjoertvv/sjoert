@@ -31,14 +31,14 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
     '''
 
     if (filename=='') and not(hdu):
-        print 'please give filename= or hdu='
+        raise Exception('please give filename= or hdu=')
         return
     if not(hdu) and not(os.path.isfile(filename)):
-        print 'file :'+ filename+ '\n not found' 
+        raise IOError('file :'+ filename+ '\n not found')
         return
     
     if not np.isscalar(center[0]):
-        print 'please give center=[ra, dec]'
+        raise Exception('please give center=[ra, dec]')
         return
 
     center = np.array(center)
@@ -49,8 +49,8 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
     elif type(hdu) == pyfits.core.HDUList:
         hdu = hdu[0]
     elif type(hdu) != pyfits.core.PrimaryHDU:
-        print 'type(hdu:)', type(hdu)
-        print 'ERROR: type(hdu) needs to be <pyfits.core.HDUList> or pyfits.core.PrimaryHDU'
+        print ('type(hdu:)', type(hdu))
+        raise TypeError('ERROR: type(hdu) needs to be <pyfits.core.HDUList> or pyfits.core.PrimaryHDU')
         return
 
     # get image
@@ -61,15 +61,15 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
         wcs = pywcs.WCS(header=hdu.header,  naxis=2) #fobj=hdulist,
     
 
-        if not silent: print 'image shape', im.shape
+        if not silent: print ('image shape', im.shape)
         if (len(im.shape) == 3):
-            if not silent: print 'using first layer of image'
+            if not silent: print ('using first layer of image')
             im = im[0,:,:]
-            print 'new image shape', im.shape
+            print ('new image shape', im.shape)
         if (len(im.shape) == 4):
-            if not silent: print 'using first layer of image'
+            if not silent: print ('using first layer of image')
             im = im[0,0,:,:]
-            if not silent: print 'new image shape', im.shape
+            if not silent: print ('new image shape', im.shape)
 
         # conver center en overplot coordinates
         #pcenter = (wcs.wcs_sky2pix([center], 1))[0] # if pywcs
@@ -79,7 +79,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
 
 
     # slice the image
-    if not silent: print 'center in pixel coordinates', pcenter
+    if not silent: print ('center in pixel coordinates', pcenter)
 
     # use true sky location (creates non-square images)
     #delta_ax1 = (np.abs(wcs.wcs_sky2pix([ [center[0]-im_size, center[1]] ], 1) - pcenter)/2.)[0][0]
@@ -104,13 +104,13 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
     if (ax2l < 0): ax2l = 0
     if (ax2u > im.shape[0]): ax2u = im.shape[0]
 
-    if not silent: print 'ax2l,ax2u, ax1l,ax1u', ax2l,ax2u,ax1l,ax1u
+    if not silent: print ('ax2l,ax2u, ax1l,ax1u', ax2l,ax2u,ax1l,ax1u)
 
     subim = im[ax2l:ax2u,ax1l:ax1u ]
 
-    if not silent: print 'subim shape:',subim.shape
+    if not silent: print ('subim shape:',subim.shape)
     if min(subim.shape) == 0:
-        print 'ERROR. something is wrong with the cutout (center+/-im_size out of bounds?) '
+        print ('ERROR. something is wrong with the cutout (center+/-im_size out of bounds?) ')
         return None
 
     # set the base of the output file 
@@ -119,14 +119,14 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
         outname = filename
         for srm in srem: outname=outname.split(srm)[0]
         if filename =='':
-            print 'warning, no filename given pdf or fits file, trying to use IAU name function from sjoert.stellar'
+            print ('warning, no filename given pdf or fits file, trying to use IAU name function from sjoert.stellar')
             try:
                 from stellar import iau_name
                 outname = iau_name(center[0], center[1])
             except ImportError:
-                print '''import failed, using "image" as filename'''
+                print ('''import failed, using "image" as filename''')
                 outname = 'image'
-        if not silent: print 'base for output file:', outname
+        if not silent: print ('base for output file:', outname)
             
 
     if writepdf:
@@ -146,7 +146,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
         if not(type(writepdf) is str):
             outfile = outname+'_sub.pdf'
         else: outfile = writepdf
-        if not silent: print 'writing', outfile
+        if not silent: print ('writing', outfile)
         plt.savefig(outfile, format='pdf')
 
     #make new WCS and save fits
@@ -161,8 +161,8 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
     ## keep CRVAL1 the same, but swift its pixel coodindates
     sub_hdr['CRPIX1'] = np.floor(hdu.header['CRPIX1'] - ax1l ) +1
     sub_hdr['CRPIX2'] = np.floor(hdu.header['CRPIX2'] - ax2l ) +1
-    if not silent: print 'orgininal CRVAL (', hdu.header['CRVAL1'], hdu.header['CRVAL2'],\
-                              ') in sub image pixel coordindates:', sub_hdr['CRPIX1'] , sub_hdr['CRPIX2'] 
+    if not silent: print ('orgininal CRVAL (', hdu.header['CRVAL1'], hdu.header['CRVAL2'],\
+                              ') in sub image pixel coordindates:', sub_hdr['CRPIX1'] , sub_hdr['CRPIX2'] )
 
     # note, after this call sub_hdu.header is differnt the input than sub_hdr
     # (eg, NAXIS, NAXIS1, are updated) 
@@ -173,7 +173,7 @@ def cutout(filename='', hdu=None, center=[None, None],im_size=0.1,pix=False,
         if not(type(writefits) is str):
             outfile = outname+'_sub.fits'
         else: outfile = writefits
-        if not silent: print 'writing:', outfile
+        if not silent: print ('writing:', outfile)
         sub_hdu.writeto(outfile,clobber=True)
 
 
