@@ -361,7 +361,7 @@ def rec2ascii(rec=None, filename='', delimiter='\t', wtype='w'):
     writerec(rec, filename, delimiter='\t', wtype='w')
     return
 
-def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
+def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w', format_str='{0:7.6e}'):
     '''
     write al list of columns to an ascii file
     >> writecols(cols=[col1, col2],filename=filename,
@@ -397,7 +397,7 @@ def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
     #write body
     for i in range(nrows):
         for j, c in enumerate(cols[0:]):
-            f.writelines(('{0:7.3e}'.format(c[i])) + delimiter[j])
+            f.writelines((format_str.format(c[i])) + delimiter[j])
         f.writelines('\n')
     f.close()
     
