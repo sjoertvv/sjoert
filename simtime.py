@@ -33,6 +33,10 @@ def datetomjd(d):
         dt = d - d0
         # dt is a timedelta object.
         return timedeltatodays(dt)
+def datetojd(d):
+        return mjdtojd(datetomjd(d))
+
+
 
 
 def datetoyear(date):
