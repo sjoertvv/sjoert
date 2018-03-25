@@ -53,8 +53,8 @@ def upload(local_folder=None, remote_host='$HELIOS', remote_folder=None):
     '''
     
     if not(local_folder):
-        print 'please give local folder to upload'
-        return
+        print('''please give local_folder='' to upload''')
+        return None
     
     os.system('chmod 664 ' +local_folder+'*/*')
     os.system('chmod 664 ' +local_folder+'*.html')
@@ -64,8 +64,8 @@ def upload(local_folder=None, remote_host='$HELIOS', remote_folder=None):
     if not(remote_folder):
         remf = local_folder.split('/')
         remote_folder = remf[len(remf)-2] +'/'        
-    print 'copy from:', local_folder
-    print 'to', remote_host+':'+remote_folder
+    print('copy from:', local_folder)
+    print('to', remote_host+':'+remote_folder)
     
     os.system('rsync -rv --progress '+local_folder+' '+ remote_host+':'+remote_folder)
     

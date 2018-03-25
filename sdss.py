@@ -21,7 +21,7 @@ def lup_to_maggie(lup, lup_sig=[], do_82=False):
     maggie = 2. * b * np.sinh(-np.log(b) - 0.4 * np.log(10.) * lup)
     if len(lup_sig) != 0:
         
-        print 'uncertainties given,; omputing the ivar of maggies'
+        print ('uncertainties given,; omputing the ivar of maggies')
         if lup.shape != lup_sig.shape:
             raise ValueError('Array size different for lup and lup_sig.')
         maggie_sigma = (2. * b * np.cosh(-np.log(b) - 0.4 * np.log(10.) * lup)
@@ -50,5 +50,5 @@ def get_nu(band):
     if band == 'i': nu = sdss_nu(3)
     if band == 'z': nu = sdss_nu(4)
     if not(nu):
-        print 'please use band=[FUV, ..., z]'
+        print ('please use band=[FUV, ..., z]')
     return nu

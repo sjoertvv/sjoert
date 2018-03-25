@@ -7,6 +7,101 @@ reading and writing, mostly fits/ascii tables and record arrays
 from astropy.io import fits as pyfits
 import numpy as np
 import pickle
+import json
+
+def json2rec(jin, silent=False, verbose=False):
+    '''
+    take a list of dictionaries from json.read() or a filename, 
+    read all the columns and make one bit python rec array
+    '''
+    if isinstance(jin, basestring):    
+        jdict_list = json.loads(open(jin).read())
+    else:
+        jdict_list = jin
+
+    if type(jdict_list) != list:
+        print('cant work with this, file is not a list; consider going a level deeper')
+        return None
+
+    # get all the keys and check if they are string or float, or another dict
+    dt_dict = {}
+    for jd in jdict_list:
+        for ku in jd.keys():
+            k = str(ku)
+            
+            # check the type            
+            this_type = type(jd[k])
+        
+            if this_type == unicode:
+                try:
+                    yup = float(jd[k])        
+                    dt = 'f8'                                            
+                except ValueError:
+                    dt = 'S'+str(len(jd[k]))
+            elif this_type==bool:
+                dt = 'i8'
+            # make an exception for entries with two values
+            elif this_type ==list:
+                if len(jd[k])==2:
+                    dt = 'f8'
+            else:
+                dt = '_nofloat'
+            if verbose:
+                print('key           :', k)
+                print('data          :', jd[k])
+                print('current type  :',type(jd[k]))
+                print('use type      :', dt)
+            
+            # add to our dict of dtypes
+            if not dt_dict.has_key(k):
+                dt_dict[k] = dt
+            else:
+                
+                # if we already have this key, make sure the string type is long enough    
+                if dt_dict[k][0]=='S':
+                    if len(jd[k])>float(dt_dict[k][1:]):
+                        dt_dict[k] = 'S'+str(len(jd[k]))            
+                
+                # or if the new dtype is different from the old one, we can't use this key for our table
+                # (can this even happen in proper json tables?)
+                elif (dt != dt_dict[k]) and (dt_dict[k]!='_skip'):
+                    if verbose or not silent:
+                        print('warning, key with different dtype, skipping this one:', k, jd[k], type(jd[k]))
+                        print('current type', dt_dict[k])
+                        print('new proposed type', dt)
+                    dt_dict[k] = '_skip'
+
+    if verbose or not(silent):
+        print('# of keys', len(dt_dict.keys()))
+    if verbose:
+        print(dt_dict)
+   
+    # make the dtype for the rec array
+    dt_list = []
+    final_keys = []
+    for k in dt_dict.keys():
+        if dt_dict[k][0]!='_':
+            dt_list.append((k,dt_dict[k]))
+            final_keys.append(k)
+
+    if verbose:
+        print('final dtype:\n',dt_list)
+
+    recarr = np.zeros(len(jdict_list), dtype=dt_list)    
+
+    # loop over all json entries, read
+    for i, jd in enumerate(jdict_list):
+        for k in final_keys:
+            if jd.get(k) is not None:
+                if type(jd.get(k)) == list:                    
+                    recarr[i][k] = (float(jd[k][0])+float(jd[k][1]))/2. # dangerous
+                else:
+                    recarr[i][k] = jd.get(k)
+
+            
+
+    return recarr
+
 
 def readpickle(filename):
    '''
@@ -47,11 +142,15 @@ def readascii(filename='', lines=None, names='', comment='#',
     if filename:
         lines = f.readlines()
 
+    if len(lines)==0:
+        print('empty file')
+        return None
     l=0
     line = lines[0]
     com_lines.append(line)
+
     
-    while (line[0] == comment) | (len(line) <= 1):
+    while ((line[0] == comment) | (len(line) <= 1)) and (l<len(lines)):
         line = lines[l] #read untill we reach data
         com_lines.append(line)
         l+=1
@@ -63,8 +162,8 @@ def readascii(filename='', lines=None, names='', comment='#',
     if filename:
         f.close() 
     
-    if not silent: print 'first line of data:', str(sline)
-    if not silent: print 'number of colums:', ncols
+    if not silent: print('first line of data:', str(sline))
+    if not silent: print('number of colums:', ncols)
 
     #Try to get col names from header 
     if (names == '') and (len(com_lines)>1):
@@ -77,11 +176,10 @@ def readascii(filename='', lines=None, names='', comment='#',
             
             if  (len(scl_del) == ncols):
                 names = scl_del
-                if not silent: print 'using col names from header:', names
+                if not silent: print('using col names from header:', names)
                 break
             
-    if len(names) != ncols:
-        #print 'making columns with default names'
+    if len(names) != ncols:        
         names= [] 
         for i in range(ncols):
             names.append('field-'+np.str(i))
@@ -97,7 +195,7 @@ def readascii(filename='', lines=None, names='', comment='#',
     if write_pickle:
         if not(type(write_pickle) is str): fout = filename+'.pickle'
         else: fout = write_pickle
-        if not silent: print 'writing:', fout
+        if not silent: print('writing:', fout)
         f = open(fout, 'w')
         pickle.dump(dd,f)
         f.close()
@@ -118,12 +216,12 @@ def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
     '''
     
     if not(filename) :
-        print 'give flinename= for output' 
+        print('give flinename= for output')
         return
     
     hdulist = pyfits.open(filename)
     tbdata = hdulist[ihdu].data
-    if verbose: print 'FITS dtype:', tbdata.dtype
+    if verbose: print('FITS dtype:', tbdata.dtype)
     hdulist.close()
 
     
@@ -140,7 +238,7 @@ def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
             if coln  == '_RAJ2000': coln= 'ra'
             if coln == '_DEJ2000': coln = 'dec'
 
-            if not(silent): print coln        
+            if not(silent): print(coln)
             # Vizier output always has len(dt)==2
             new_dtype.append((coln, dt)) 
 
@@ -151,9 +249,9 @@ def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
     for i, coln in enumerate(newrec.dtype.names): 
         coldata = tbdata.field(tbdata.dtype.names[i]).copy()
         if verbose:
-            print 'data:\t', coldata
-            print 'dtype:\t', newrec[coln].dtype
-            print 'name in rec:\t',coln
+            print ('data:\t', coldata)
+            print ('dtype:\t', newrec[coln].dtype)
+            print ('name in rec:\t',coln)
         newrec[coln] = coldata
 
     return newrec
@@ -165,7 +263,7 @@ def readfits(filename='', ihdu=1):
     '''
 
     if not(filename) :
-        print 'give flinename= for output' 
+        print('give flinename= for output')
         return
     
     hdulist = pyfits.open(filename)
@@ -173,7 +271,7 @@ def readfits(filename='', ihdu=1):
     cols = hdulist[ihdu].columns  
 
     hdulist.close()
-    for colname in cols.names: print colname
+    for colname in cols.names: print(colname)
        
     return tbdata
 
@@ -183,7 +281,7 @@ def rec2fits(rec=None, filename=''):
     >> rec2fits(rec, filename)
     '''
     if not(filename) :
-        print 'give flinename= for output' 
+        print('give flinename= for output' )
         return
 
     # try to keep things working for older version of pyFITS <-- no longer possible with astropy.io.fits
@@ -216,7 +314,7 @@ def rec2fits(rec=None, filename=''):
     tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
     
     tbhdu.writeto(filename, clobber=True)
-    print 'written:', filename
+    print ('written:', filename)
     return
 
     
@@ -230,7 +328,7 @@ def writerec(rec=None, filename='', delimiter='\t', wtype='w'):
     '''
 
     f = open(filename, wtype)
-    print 'writing', filename
+    print('writing', filename)
     
     keys =rec.dtype.names # column names
 
@@ -263,7 +361,7 @@ def rec2ascii(rec=None, filename='', delimiter='\t', wtype='w'):
     writerec(rec, filename, delimiter='\t', wtype='w')
     return
 
-def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
+def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w', format_str='{0:7.6e}'):
     '''
     write al list of columns to an ascii file
     >> writecols(cols=[col1, col2],filename=filename,
@@ -275,16 +373,16 @@ def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
     nrows = len(cols[0])
     for i, c in enumerate(cols[-1:]):
         if (len(c) != nrows):
-            print 'column ',i, ' not of same length as first column. ', len(c), nrows
+            print('column ',i, ' not of same length as first column. ', len(c), nrows)
             return
 
     f = open(filename, wtype)
-    print 'writing:\n', filename
+    print('writing:\n', filename)
 
     # make the header
     if len(names):
         if len(names) != ncols:
-            print 'names not equal to number of collumns:', ncols, names
+            print('names not equal to number of collumns:', ncols, names)
             return
         f.writelines('# ')
         for n in names:
@@ -299,7 +397,7 @@ def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w'):
     #write body
     for i in range(nrows):
         for j, c in enumerate(cols[0:]):
-            f.writelines(('{0:7.3e}'.format(c[i])) + delimiter[j])
+            f.writelines((format_str.format(c[i])) + delimiter[j])
         f.writelines('\n')
     f.close()
     
@@ -349,10 +447,10 @@ def rec2cds(rec, filename='', precision=None, unit=None, explanation=None):
 
     # same for all
     if np.isscalar(precision): 
-        print 'using '+str(precision), ' digits for all columns'
+        print('using '+str(precision), ' digits for all columns')
         for i, col in enumerate(rec.dtype.names):
             formatter[i], n_dig[i] =  col_formatter(rec[col], prec=precision)
-            #print col, '\t', n_dig[i], formatter[i]
+            #print(col, '\t', n_dig[i], formatter[i])
 
     # dict for each col
     elif type(precision) == dict:
@@ -362,18 +460,18 @@ def rec2cds(rec, filename='', precision=None, unit=None, explanation=None):
             except KeyError: 
                 prec=7 
             formatter[i], n_dig[i] =  col_formatter(rec[col], prec=prec)
-            #print col, '\t', n_dig[i], formatter[i]
+            #print(col, '\t', n_dig[i], formatter[i])
 
     # fixed 7 four digit precision if no input given
     else:
-        print 'using 7 digits for as default precision for floats'
+        print('using 7 digits for as default precision for floats')
         for i, col in enumerate(rec.dtype.names):
             formatter[i], n_dig[i] =  col_formatter(rec[col], prec=7)
             #print col, '\t', n_dig[i], formatter[i]
 
     # write, to terminal or file
     if filename: 
-        print 'writing to', filename
+        print('writing to', filename)
         f = open(filename, 'w')
 
     # make the header:
@@ -399,7 +497,7 @@ def rec2cds(rec, filename='', precision=None, unit=None, explanation=None):
             except KerError:
                  ss+='{0:35}'.format('')
         
-        print ss         
+        print(ss)
         if filename:
             f.writelines(ss+'\n')
         
@@ -409,7 +507,7 @@ def rec2cds(rec, filename='', precision=None, unit=None, explanation=None):
     if filename: 
         f.writelines('\n')
 
-    print ''
+    print('')
     
     for l, r in enumerate(rec):         
         line = ''
@@ -419,10 +517,10 @@ def rec2cds(rec, filename='', precision=None, unit=None, explanation=None):
         if filename: 
             f.writelines(line+'\n')
             if np.mod(l, len(rec)/10)==0:
-                print line
+                print(line)
         else: 
             if np.mod(l, len(rec)/10)==0:
-                print line
+                print(line)
 
     if filename: 
         f.close()

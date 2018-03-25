@@ -1,19 +1,20 @@
 '''
 various function for astronomy. 
- - wrappers around cosmolopy (lumdis(z), dismod(z) etc.)
+ - wrappers around astropy cosmolopy (lumdis(z), dismod(z) etc.)
  - very simle friends-of-friends (one_group)
- - luminosity functions (schechter)
- - angular distance, and more
+ - luminosity functions (Schechter)
+ - angular distance between two points
 2010 May - started (Sjoert van Velzen, Radboud, NL)
 2012 Aug - updated docstrings, import checks (SVV)
+2018 Feb - moving to python3
 '''
 
 try:
     from k3match import celestial as spherematch
 except ImportError:
-    print 'k3match import failed'
-    print 'the fof function (one_group) wont work'
-    print '(you can obtain k3match from pschella.github.com/k3match/)'
+    print('k3match import failed')
+    print('the fof function (one_group) wont work')
+    print('(you can obtain k3match from pschella.github.com/k3match/)')
 
 
 import astropy.cosmology as cospy
@@ -22,14 +23,14 @@ import astropy.cosmology as cospy
 try:
     from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
 except ImportError:
-    print 'starutil_numpy not found on system' 
+    print('starutil_numpy not found on system')
 
 
 import numpy as np
 from numpy import floor, double
 
-import sdss, swift
-from simtime import * # for backward comp
+from . import sdss, swift
+from sjoert.simtime import * # for backward comp
 
 
 # Some Physical constants (cgs)
@@ -128,12 +129,12 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
         ss1, d12 = one_match(ra0, dec0, ra, dec, link_length)
         
         if len(m1) < 1:
-            if verbose:print ' < 1 elements in group, not matching:', m1
+            if verbose:print(' < 1 elements in group, not matching:', m1)
             return m1
 
         prev_members = m1
         current_members = m1
-        if verbose: print 'setting prev_members to first match with ra0,dec0:', prev_members
+        if verbose: print('setting prev_members to first match with ra0,dec0:', prev_members)
 
 
     else:
@@ -141,18 +142,18 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
         m1, m2, d12 = spherematch(ra, dec, group_in[0], group_in[1], 0.1/3600.)
         prev_members = m1
         current_members = m1
-        if verbose: print 'setting prev_members to first match with group_in:', prev_members
+        if verbose: print('setting prev_members to first match with group_in:', prev_members)
 
         
-    if verbose: print ' one_group: #potential ra:', len(ra)
+    if verbose: print(' one_group: #potential ra:', len(ra))
     left = np.arange(len(ra))
     left = np.setdiff1d(left, prev_members)
     nleft =   len(left)
     if verbose:
-        print ' one_group: #left to match:', nleft
+        print(' one_group: #left to match:', nleft)
 
     if nleft == 0:
-        print ' first group already contains everyting'
+        print(' first group already contains everyting')
         return m1
     
     if apl:
@@ -161,17 +162,17 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
             apl.show_markers(np.array(cat[prev_members]['ra']),
                          np.array(cat[prev_members]['dec']),
                          edgecolor='cyan', marker='d', alpha=.7, s=350)
-            print ' overplotted prev_members in cyan diamonds:', prev_members
+            print(' overplotted prev_members in cyan diamonds:', prev_members)
             key = raw_input()
         except TypeError:
-            print '\n no cat=catalog with ra, dec columns given to overplot coordinates'
+            print('\n no cat=catalog with ra, dec columns given to overplot coordinates')
 
     # loop until now new groups are found, or all is in the group
     while len(left):
 
         if verbose:
-            print ' current members', current_members
-            print ' # left ',len(left)
+            print(' current members', current_members)
+            print(' # left ',len(left))
 
         # find new matches
         new_members = np.array([],dtype='<i4')
@@ -183,7 +184,7 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
             new_members  = np.append(new_members,left[um1])
 
         if verbose:
-            print ' new members from match', new_members
+            print(' new members from match', new_members)
 
         # add new matches, or stop
         if len(new_members) > 0:
@@ -197,10 +198,10 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
                     apl.show_markers(np.array(cat[new_members]['ra']),
                                      np.array(cat[new_members]['dec']),
                                      edgecolor='green', alpha=.7, s=300)
-                    print ' overplotted new_members with green circles:', new_members
+                    print(' overplotted new_members with green circles:', new_members)
 
                 except TypeError:
-                    print '\n no cat=catalog given to overplot coordinates'
+                    print('\n no cat=catalog given to overplot coordinates')
             if verbose: key = raw_input()
             
         else:
@@ -228,7 +229,7 @@ def iau_name(ra,dec,prefix='',precision=1, verbose=False):
         ras = np.round(ras)
         rasformat= '%2d'
 
-    if verbose: print 'ras, rasformat:', ras, rasformat 
+    if verbose: print('ras, rasformat:', ras, rasformat)
 
     desgn= '+'
     if dec <0: desgn= '-'
@@ -242,7 +243,7 @@ def iau_name(ra,dec,prefix='',precision=1, verbose=False):
         des = np.round(des)
         desformat= '%2d'
 
-    if verbose: print 'des, desformat', des, desformat
+    if verbose: print('des, desformat', des, desformat)
 
     adstr= '%2.2d'%rah + '%2.2d'%ram + rasformat %ras \
            +desgn +'%2.2d'%ded +'%2.2d'%dem +desformat %des
@@ -307,7 +308,7 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
     note, no K-correction
     '''
     if nu is None and not(band):
-        print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
+        print('please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]')
         return None
 
     if band is not(None):  nu = get_nu(nu, band)
@@ -361,7 +362,7 @@ def flux2lum(S, z=None, cm=None, nu=None, band=None,
     can overwrite default cosmology using keywords (see lumdis docstring)
     '''
     if nu is None and not(band):
-        print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
+        print('please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]')
         return None
 
     if band is not(None):  nu = get_nu(nu, band)
@@ -417,7 +418,7 @@ def abs2lum(M, nu=None, band=None):
     '''
 
     if nu is None and band is None:
-        print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
+        print('please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]')
         return None
 
     if nu is None:
@@ -431,7 +432,7 @@ def lum2abs(L, nu=None, band=None):
     nu Lnu (erg/s) to AB absolute mag
     '''
     if nu is None and not(band):
-        print 'please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]'
+        print('please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]')
         return None
     if nu is None:
         nu = get_nu(band)    
@@ -526,11 +527,6 @@ def Planck(nu=None, T=None):
 
     return black body intensity (power per unit area per solid angle per frequency)
     '''
-    if (nu is None) or (T is None):
-        print 'ERROR, please give input: '
-        print 'Planck(nu=nu, T=T)' 
-        return np.nan
-    
     return 2*h/c**2 * nu**3 / (np.exp(h*nu/(k*T))-1) 
 
 def Planck_wave(wave=None, T=None):
@@ -538,8 +534,8 @@ def Planck_wave(wave=None, T=None):
 
 def dPlanckdT(nu=None, T=None):
     if (nu is None) or (T is None):
-        print 'ERROR, please give input: '
-        print 'Planck(nu=nu, T=T)'
+        print('ERROR, please give input: ')
+        print('Planck(nu=nu, T=T)')
         return np.nan
 
     exp_part = np.exp(h*nu/(k*T))
@@ -548,8 +544,8 @@ def dPlanckdT(nu=None, T=None):
 
 def dPlanckdnu(nu=None, T=None):
     if (nu is None) or (T is None):
-        print 'ERROR, please give input: '
-        print 'Planck(nu=nu, T=T)'
+        print('ERROR, please give input: ')
+        print('Planck(nu=nu, T=T)')
         return np.nan
     hkT=h/(k*T)
     exp_part = np.exp(nu*hkT)
