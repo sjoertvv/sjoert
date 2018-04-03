@@ -8,13 +8,14 @@ from astropy.io import fits as pyfits
 import numpy as np
 import pickle
 import json
+from six import string_types
 
 def json2rec(jin, silent=False, verbose=False):
     '''
     take a list of dictionaries from json.read() or a filename, 
-    read all the columns and make one bit python rec array
+    read all the columns and make one big python rec array
     '''
-    if isinstance(jin, basestring):    
+    if isinstance(jin, string_types):    
         jdict_list = json.loads(open(jin).read())
     else:
         jdict_list = jin
