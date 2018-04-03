@@ -9,6 +9,7 @@ import numpy as np
 import pickle
 import json
 from six import string_types
+import sys
 
 def json2rec(jin, silent=False, verbose=False):
     '''
@@ -32,13 +33,22 @@ def json2rec(jin, silent=False, verbose=False):
             
             # check the type            
             this_type = type(jd[k])
-        
-            if this_type == unicode:
+            
+            # check if key contain str 
+            strlike = False 
+            if sys.version[0]=='2':
+                if this_type == unicode:
+                    strlike = True
+            else:
+                if this_type == str: 
+                    strlike = True
+            # check if we can concert the str to a float
+            if strlike:
                 try:
                     yup = float(jd[k])        
                     dt = 'f8'                                            
                 except ValueError:
-                    dt = 'S'+str(len(jd[k]))
+                    dt = 'U'+str(len(jd[k]))
             elif this_type==bool:
                 dt = 'i8'
             # make an exception for entries with two values
@@ -54,7 +64,7 @@ def json2rec(jin, silent=False, verbose=False):
                 print('use type      :', dt)
             
             # add to our dict of dtypes
-            if not dt_dict.has_key(k):
+            if not k in dt_dict:
                 dt_dict[k] = dt
             else:
                 
