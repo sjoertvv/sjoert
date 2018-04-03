@@ -48,7 +48,7 @@ def json2rec(jin, silent=False, verbose=False):
                     yup = float(jd[k])        
                     dt = 'f8'                                            
                 except ValueError:
-                    dt = 'U'+str(len(jd[k]))
+                    dt = 'U40'#+str(len(jd[k]))
             elif this_type==bool:
                 dt = 'i8'
             # make an exception for entries with two values
