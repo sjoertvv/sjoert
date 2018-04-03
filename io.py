@@ -35,15 +35,8 @@ def json2rec(jin, silent=False, verbose=False):
             this_type = type(jd[k])
             
             # check if key contain str 
-            strlike = False 
-            if sys.version[0]=='2':
-                if this_type == unicode:
-                    strlike = True
-            else:
-                if this_type == str: 
-                    strlike = True
-            # check if we can concert the str to a float
-            if strlike:
+            if isinstance(jd[k], string_types):
+                # check of the str uncodes a number
                 try:
                     yup = float(jd[k])        
                     dt = 'f8'                                            
