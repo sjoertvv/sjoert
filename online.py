@@ -16,7 +16,7 @@ import json
 
 import sjoert.dirs as dirs
 import sjoert.rec as rec
-from sjoert.io import readascii, pyfits
+from sjoert.io import readascii, pyfits, json2rec
 from sjoert.stellar import iau_name
 
 try:
@@ -48,7 +48,7 @@ PS1_seach_url = 'http://archive.stsci.edu/panstarrs/search.php'
 
 def ps1_cone_seach(ra, dec, rad=1/60., do_chrome=False, do_headless=True,
             chrome_binary_location = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            chrome_driver_binary = "/usr/local/bin/chromedriver"
+            chrome_driver_binary = "/usr/local/bin/chromedriver",
             phantomjs_driver_binary="/usr/local/bin/phantomjs"):
     '''
     rec_arr = ps1_cone_seach(ra, dec, rad=1/60.)
@@ -60,7 +60,7 @@ def ps1_cone_seach(ra, dec, rad=1/60., do_chrome=False, do_headless=True,
     otherwise, we use the PhantomJS driven and need the phantomjs_driver_binary keyword
     '''
     
-    from selenium import webdrivers # putting this import these since it's not trivial
+    from selenium import webdriver # https://stackoverflow.com/questions/18868743/how-to-install-selenium-webdriver-on-mac-os
 
 
     cmd = {}
@@ -97,7 +97,7 @@ def ps1_cone_seach(ra, dec, rad=1/60., do_chrome=False, do_headless=True,
     # joins statement not realy needed because PS1 json is not nested (but you never know)
     jj = json.loads('['+"".join(heck_yeah.split(']')[0:-1]).split('[')[1]+']')
 
-    return sjoert.io.json2rec(jj)
+    return json2rec(jj)
 
 
 
