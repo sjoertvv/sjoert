@@ -19,7 +19,7 @@ from . import rec
 from . import dirs
 from . import html
 from . import plot
-from . import catalogs
+from . import online
 from . import latex
 from . import sdss
 from . import fits
@@ -28,5 +28,5 @@ from . import cutout
 #from . import misc
 
 __all__ = ['io','rec','dirs','cutout','html', \
-			'stellar','catalogs','simstat','plot',\
+			'stellar','online','simstat','plot',\
 			'latex', 'sdss', 'fits']
