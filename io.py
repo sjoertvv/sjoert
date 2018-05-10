@@ -1,7 +1,10 @@
 '''
 reading and writing, mostly fits/ascii tables and record arrays
+
 2010 June - started (Sjoert van Velzen)
 2012 Aug - updated docstrings (SVV)
+2017 Nov - fun with json 
+2018 Apr - updates from astropy 3.0
 '''
 
 from astropy.io import fits as pyfits
@@ -317,7 +320,7 @@ def rec2fits(rec=None, filename=''):
 
     tbhdu=pyfits.BinTableHDU.from_columns(rec) # the way to go
     
-    tbhdu.writeto(filename, clobber=True)
+    tbhdu.writeto(filename, overwrite=True)
     print ('written:', filename)
     return
 
