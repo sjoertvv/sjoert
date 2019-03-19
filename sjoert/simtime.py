@@ -31,6 +31,9 @@ def mjdtoyear(mjd):
             out[i] = datetoyear(mjdtodate(mjd[i]))
         return out
 
+def jdtoyear(jd):
+    return mjdtoyear(jdtomjd(jd))
+
 def timedeltatodays(dt):
         return dt.days + (dt.seconds + dt.microseconds/1e6)/86400.
 

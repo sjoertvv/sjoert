@@ -17,6 +17,21 @@ def Gauss(x, mu=0, sigma=1, fwhm=None):
         sigma = 0.5 * fwhm / np.sqrt(2*np.log(2))
     return 1/(sigma*np.sqrt(2*np.pi)) * np.exp( -0.5 * (x-mu)**2 / (sigma**2) )
 
+def sammy(y,x, n=int(1e6)):
+    '''
+    returns x samples for a distribution of y(x) 
+    x has to be monotonic increasing/decreasing, but doesnt have to be equally spaced
+    '''
+    y_int = np.zeros(len(x))
+    x_int = np.zeros(len(x))
+    x_int[0]=x[0]
+    for i in range(1,len(y)):
+        y_int[i] = np.trapz(y[0:i], x[0:i])
+        x_int[i] = x[i]-(x[i]-x[i-1])*0.5
+    y_int/=y_int[-1]
+    
+    return np.interp(np.random.rand(int(n)), y_int, x_int)
+
 def wmean(d, ivar):
     '''
     >> mean = wmean(d, ivar)

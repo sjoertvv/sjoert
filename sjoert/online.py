@@ -19,6 +19,9 @@ import sjoert.rec as rec
 from sjoert.io import readascii, pyfits, json2rec
 from sjoert.stellar import iau_name
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 try:
     import sqlcl 
 except ImportError:
@@ -46,18 +49,26 @@ SDSS_cas=\
 PS1_seach_url = 'http://archive.stsci.edu/panstarrs/search.php'
 
 
-def ps1_cone_seach(ra, dec, rad=1/60., do_chrome=False, do_headless=True,
+def ps1_cone_search(ra, dec, rad=1/60., do_chrome=False, go_headless=True,
+            return_rec=True, name='',
+            verbose=True,
             chrome_binary_location = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
             chrome_driver_binary = "/usr/local/bin/chromedriver",
             phantomjs_driver_binary="/usr/local/bin/phantomjs"):
     '''
     rec_arr = ps1_cone_seach(ra, dec, rad=1/60.)
+
+    ra, dec, rad in degree
     
-    use the cone search form at http://archive.stsci.edu/panstarrs
+    Use the cone search form at http://archive.stsci.edu/panstarrs
     selenium is used to start a brower and click the search button
 
-    if using the Chrome driver, we need the path to Chrome itself (chrome_binary_location) and the driver (chrome_driver_binary) 
+    By default we return a np.recarray with all matches. But if return_rec=False, we return json
+
+    If using the Chrome driver, we need the path to Chrome itself (chrome_binary_location) and the driver (chrome_driver_binary) 
     otherwise, we use the PhantomJS driven and need the phantomjs_driver_binary keyword
+
+    chrome driver binaries are kept here: http://chromedriver.storage.googleapis.com/index.html
     '''
     
     from selenium import webdriver # https://stackoverflow.com/questions/18868743/how-to-install-selenium-webdriver-on-mac-os
@@ -67,7 +78,7 @@ def ps1_cone_seach(ra, dec, rad=1/60., do_chrome=False, do_headless=True,
 
     cmd["ra"] = str(ra)
     cmd["dec"] = str(dec)
-    cmd["radius"] = str(rad)
+    cmd["radius"] = str(rad*60)
     cmd["outputformat"] = "JSON"
 
     resp = requests.get(PS1_seach_url,cmd)
@@ -86,7 +97,7 @@ def ps1_cone_seach(ra, dec, rad=1/60., do_chrome=False, do_headless=True,
 
 
     driver.get(resp.url)
-    driver.find_element_by_css_selector("[value='Search']").click()
+    driver.find_element_by_css_selector("[value='Search'").click()
 
     heck_yeah =  driver.page_source
 
@@ -94,10 +105,50 @@ def ps1_cone_seach(ra, dec, rad=1/60., do_chrome=False, do_headless=True,
 
     #soup = BeautifulSoup(heck_yeah,"lxml")
 
-    # joins statement not realy needed because PS1 json is not nested (but you never know)
-    jj = json.loads('['+"".join(heck_yeah.split(']')[0:-1]).split('[')[1]+']')
+    # join statement not realy needed because PS1 json is not nested (but you never know)
+    try:
+        jj = json.loads('['+"".join(heck_yeah.split(']')[0:-1]).split('[')[1]+']')
+    except Exception as e:
+        print (e)
 
-    return json2rec(jj)
+        print ('ps1_cone_seach: failed to get data for these coorindates:',ra, dec, ', with search radius {0:0.2} arcsec'.format(rad*60))
+        print ('url was \n', resp.url)
+        print ('output from driver:', heck_yeah)
+        return np.array([])
+
+    # conver hms/dms to deg
+    for i in range(len(jj)):
+        try:
+            c = SkyCoord(jj[i]['raMean'],jj[i]['decMean'],unit=(u.hourangle, u.deg)) 
+            jj[i]['raMean'],jj[i]['decMean'] = str((c.ra *u.deg).value), str((c.dec *u.deg).value)
+        except ValueError:
+            jj[i]['raMean'],jj[i]['decMean']= '-999', '-999'
+        try:
+            c = SkyCoord(jj[i]['raStack'],jj[i]['decStack'],unit=(u.hourangle, u.deg)) 
+            jj[i]['raStack'],jj[i]['decStack'] = str((c.ra *u.deg).value), str((c.dec *u.deg).value)
+        except ValueError:
+            jj[i]['raStack'],jj[i]['decStack'] = '-999', '-999'
+
+        #print  (jj[i]['ra'],jj[i]['dec'] )
+
+    # the PS1 search page doesnt allow fits output, but that wont stop us
+    if return_rec:
+        out = json2rec(jj, verbose=False, silent=True) 
+    else:
+        out = jj
+
+    if '.' in name:
+        if (name.split('.')[-1]=='fits') and return_rec: 
+            print('writing to ', name)
+            pyfits.writeto(name, out, clobber=True)
+        elif (name.split('.')[-1]=='json') and not return_rec:
+            print('writing to ', name)
+            open(name,'w').writelines((json.dumps(out, indent=3)))
+        else:
+            print('ps1_cone_seach: output file type not recognized (we only accept .json, or .fits)')
+            print (name)
+
+    return out
 
 
 

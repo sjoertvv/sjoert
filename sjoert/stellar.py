@@ -7,6 +7,7 @@ various function for astronomy.
 2010 May - started (Sjoert van Velzen, Radboud, NL)
 2012 Aug - updated docstrings, import checks (SVV)
 2018 Feb - moving to python3
+2018 Apr - new default H0: h=0.7
 '''
 
 try:
@@ -16,6 +17,7 @@ except ImportError:
     print('the fof function (one_group) wont work')
     print('(you can obtain k3match from pschella.github.com/k3match/)')
 
+h0 = 0.7 # the defaul H0
 
 import astropy.cosmology as cospy
 
@@ -254,38 +256,38 @@ def iau_name(ra,dec,prefix='',precision=1, verbose=False):
     return prefix+adstr
 
 
-def lumdis(z, h=.72, Om0=.3):
+def lumdis(z, h=h0, Om0=.3):
     '''
     return luminosity distance in cm
     use FlatLambdaCDM
-    with Om0=0.3, h=0.72
+    with Om0=0.3, h=0.7
     can be overwritten using keywords
-    >> ld_cm = lumdis(z, h=.72, Om0=.3)
+    >> ld_cm = lumdis(z, h=0.7, Om0=.3)
     '''
     return cospy.FlatLambdaCDM(H0=h*100, Om0=Om0).luminosity_distance(z).value *1e6*parsec_in_cm
 
-def comdis(z, h=.72, Om0=.3):
+def comdis(z, h=h0, Om0=.3):
     '''
     return comosving distance in cm
     use FlatLambdaCDM
-    with Om0=0.3, h=0.72
+    with Om0=0.3, h=0.70
     can be overwritten using keywords
-    >> cd_cm =  comdis(z, h=.72, Om0=.3)
+    >> cd_cm =  comdis(z, h=0.7, Om0=.3)
     '''
     return cospy.FlatLambdaCDM(H0=h*100, Om0=Om0).comoving_distance(z).value *1e6*parsec_in_cm
 
-def angdis(z, h=.72, Om0=.3):
+def angdis(z, h=h0, Om0=.3):
     '''
     return comosving distance in cm
     use FlatLambdaCDM
-    with Om0=0.3, h=0.72
+    with Om0=0.3, h=0.70
     can be overwritten using keywords
-    >> ad_cm =  angdis(z, h=.72, Om0=.3)
+    >> ad_cm =  angdis(z, h=h0, Om0=.3)
     '''
     
     return cospy.FlatLambdaCDM(H0=h*100, Om0=Om0).angular_diameter_distance(z).value *1e6*parsec_in_cm
 
-def pc2as(z, h=.72, Om0=.3):
+def pc2as(z, h=h0, Om0=.3):
     '''
     convert parsec to arcsec
     >> as = pc2mas(0.1) * 10
@@ -295,7 +297,7 @@ def pc2as(z, h=.72, Om0=.3):
 
 
 def lum2flux(L, z=None, cm=None, nu=None, band=None,
-                     h=.72, Om0=.3):
+                     h=h0, Om0=.3):
     '''
     erg/s to Jansky
     >> flux = lum2flux(L, z, nu=1.4e9) # in Jy
@@ -317,7 +319,7 @@ def lum2flux(L, z=None, cm=None, nu=None, band=None,
     return L / (nu * 4*np.pi * cm**2) *1e23 
 
 def lum2mag(L, z=None, cm=None, nu=None, band=None,
-                     h=.72, Om0=.3):
+                     h=h0, Om0=.3):
     '''
     erg/s to AB mag
     >> flux = lum2flux(L, z, nu=1.4e9) # in Jy
@@ -349,7 +351,7 @@ def mag2nuFnu(mag, nu):
     return mag2flux(mag)*1e-23*nu
 
 def flux2lum(S, z=None, cm=None, nu=None, band=None,
-                     h=.72, Om0=.3):
+                     h=h0, Om0=.3):
     '''
     Jansky to erg/s
     >> nuLnu = flux2lum(S, z, nu=None, band=None)
@@ -371,10 +373,10 @@ def flux2lum(S, z=None, cm=None, nu=None, band=None,
     return 4*np.pi * cm**2 * S*1e-23 * nu
 
 
-def dismod(z, h=.72, Om0=.3):
+def dismod(z, h=h0, Om0=.3):
     '''
     distance modulus: 5*np.log10(lumdis/10.)
-    >> dm = dismod(z, h=.72, Om0=.3)
+    >> dm = dismod(z, h=h0, Om0=.3)
     '''
     d = lumdis(z, h=h, Om0=Om0)/parsec
     return 5*np.log10(d/10.)
@@ -453,7 +455,7 @@ def mag2flux(mag):
     return 10**(-0.4*(mag + 48.6)) *1e23
 
 def mag2lum(M, z, nu=None, band=None,
-                      h=.72, Om0=.3):
+                      h=h0, Om0=.3):
     '''
     lum  = mag2lum(22.5, 0.1, band='r')
     convert AB magnitude to luminosity in erg/s
@@ -635,13 +637,13 @@ def MBH_mass(bulge_mass,source=default_source):
 
 
 
-def schechter(M, h=0.70, paper='Blanton03'):
+def schechter(M, h=h0, paper='Blanton03'):
     '''
     the Schelter function for the 
     possible papers: r-band: Blanton03  (default), Blanton01
                      K-band: Simth09, Bell03, Cole01, Kochanek01, Jone06
 
-    >> rho  = schechter([-22, -23], h=0.72, paper='Blanton01')
+    >> rho  = schechter([-22, -23], h=0.70, paper='Blanton01')
     '''
     # r-band Blanton01 (z=0)
     if paper== 'Blanton01':

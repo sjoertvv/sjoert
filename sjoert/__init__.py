@@ -24,9 +24,11 @@ from . import latex
 from . import sdss
 from . import fits
 from . import cutout
+from . import gaia
+from . import swift
 
 #from . import misc
 
 __all__ = ['io','rec','dirs','cutout','html', \
 			'stellar','online','simstat','plot',\
-			'latex', 'sdss', 'fits']
+			'latex', 'sdss', 'fits', 'gaia', 'swift']

@@ -79,7 +79,7 @@ def slice_cols(ori_rec, sub_cols):
 
 def merge_rec(d1,d2):
     '''
-    append data from d1 to d2.
+    append data from recarray d1 to recarray d2.
     >> new_rec = merge_rec(d1,d2)
 
     only collumns from d1 are used
