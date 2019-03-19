@@ -37,16 +37,19 @@ def json2rec(jin, silent=False, verbose=False):
             # check the type            
             this_type = type(jd[k])
             
-            # check if key contain str 
+            # check if str can be converted to float
             if isinstance(jd[k], string_types):
                 # check of the str uncodes a number
                 try:
                     yup = float(jd[k])        
                     dt = 'f8'                                            
                 except ValueError:
-                    dt = 'U40'#+str(len(jd[k]))
+                    dt = 'U'+str(len(jd[k])+1)
+            # 
             elif this_type==bool:
                 dt = 'i8'
+            elif this_type==float:
+                dt='f8'
             # make an exception for entries with two values
             elif this_type ==list:
                 if len(jd[k])==2:
@@ -192,8 +195,13 @@ def readascii(filename='', lines=None, names='', comment='#',
             names.append('field-'+np.str(i))
 
     # Read file
-    dd = np.recfromtxt(lines, delimiter=delimiter, names=names)
+    data = np.recfromtxt(lines, delimiter=delimiter, names=names)
 
+    # we want unicode strings
+    dt =  data.dtype.descr
+    for i in range(len(dt)):
+        dt[i] = (dt[i][0], dt[i][1].replace('S','U'))
+    data = data.astype(dt)
     # notes:
     # recform finds formats automatically, 
     # while genfromtxt and loadtxt do not
@@ -204,9 +212,9 @@ def readascii(filename='', lines=None, names='', comment='#',
         else: fout = write_pickle
         if not silent: print('writing:', fout)
         f = open(fout, 'w')
-        pickle.dump(dd,f)
+        pickle.dump(data,f)
         f.close()
-    return dd
+    return data
 
      
 def fits2rec(filename='', silent=False, ihdu=1, vizmod=False, verbose=False):
@@ -357,22 +365,31 @@ def writerec(rec=None, filename='', delimiter='\t', wtype='w'):
         f.writelines('\n')
     f.close()
 
-def rec2ascii(rec=None, filename='', delimiter='\t', wtype='w'):
+def rec2ascii(rec=None, filename='', delimiter=' ', format_str='9.6e', debug=False):
     '''
+    wrapper for the writecolos() function
     write all collumns of a records array to a ascii table
-    >> rec2ascii(rec=rec, filename=filename, delimiter='\t', wtype='w')
+    >> rec2ascii(rec=rec, filename=filename, delimiter='\t')
     
     use wtype='a' to append
     (see rec2fits for writing to fits table)
     '''
-    writerec(rec, filename, delimiter='\t', wtype='w')
-    return
+    cols = [rec[k] for k in rec.dtype.names]
+    names = [k for k in rec.dtype.names]
 
-def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w', format_str='{0:7.6e}'):
+    writecols(cols=cols,names=names,  filename=filename, delimiter=delimiter, format_str=format_str, debug=debug)
+
+def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w', format_str='12.6e', debug=False):
     '''
+    
     write al list of columns to an ascii file
+
     >> writecols(cols=[col1, col2],filename=filename,
-                         names=['ra', 'flux'], delimiter='\t', wtype='w')
+                         names=['ra', 'flux'], delimiter=' ', format_str='12.6e' , wtype='w')
+    
+    - format_str is only used for floats (eg, format_str='4.3f')
+    - wtype can be 'w' (overwrite) or 'a' (append) 
+
     '''
 
     # the lengths
@@ -383,28 +400,67 @@ def writecols(cols=[],filename='',  names=[], delimiter='\t', wtype='w', format_
             print('column ',i, ' not of same length as first column. ', len(c), nrows)
             return
 
-    f = open(filename, wtype)
-    print('writing:\n', filename)
-
-    # make the header
+    # check the header
     if len(names):
         if len(names) != ncols:
             print('names not equal to number of collumns:', ncols, names)
-            return
-        f.writelines('# ')
-        for n in names:
-            f.writelines('{0:8}'.format(n)+delimiter)
-        f.writelines('\n')
-    
-    
+            return        
+
+    f = open(filename, wtype)
+    print('writing:\n', filename)
+
     # make the delimiter vector (last has to be empty)
     delimiter = np.repeat(delimiter, ncols)
     delimiter[-1] = ''
 
+    # check format, make sure strings and ints are printed with enough space
+    format_dict = {}
+    for j, c in enumerate(cols):
+        str_max = len(names[j])
+        int_max = len(names[j])
+        format_dict[j] = '{0:'+str(int_max)+'}'
+        for i in range(nrows):        
+
+            # debug
+            if i==0 and debug:
+                print (names[j], type(c[i])) 
+                print (type(c[i]) is np.str or type(c[i]) is np.unicode or type(c[i]) is np.unicode_)
+
+            
+            if type(c[i]) is np.str_ or type(c[i]) is np.unicode_:
+                if len(c[i])>str_max:
+                    format_dict[j] = '{0:'+str(len(c[i]))+'}'
+                    str_max = len(c[i])
+            elif type(c[i]) is np.int_:
+                if c[i]==0:
+                    base10plus1 = 1
+                else:
+                    base10plus1 = int(np.log10(abs(c[i])))+1
+                if base10plus1>int_max:
+                    format_dict[j] = '{0:'+str(base10plus1)+'}'
+                    int_max = base10plus1
+            else:
+                format_dict[j] = '{0:'+format_str+'}'
+
+    # write header
+    for j, n in enumerate(names):
+        ss = format_dict[j]
+        if '.' in ss:
+            ss = ss.split('.')[0]+'}'
+        if j==0:
+            n='#'+n
+        
+        if debug: 
+            print (format_dict[j], ss)
+        
+        f.writelines(ss.format(n) + delimiter[j])
+    f.writelines('\n')
+    
+
     #write body
     for i in range(nrows):
-        for j, c in enumerate(cols[0:]):
-            f.writelines((format_str.format(c[i])) + delimiter[j])
+        for j, c in enumerate(cols):            
+            f.writelines((format_dict[j].format(c[i])) + delimiter[j])
         f.writelines('\n')
     f.close()
     
