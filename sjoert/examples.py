@@ -12,7 +12,7 @@ try:
     argv = sys.argv[1:]
     opts, args = getopt.getopt(argv, "v:b:m:c:hd", ['nologger'])
 except getopt.GetoptError:
-    print 'unkown parse parameter' 
+    print ('unkown parse parameter' )
     #usage()
     sys.exit(2) 
 
