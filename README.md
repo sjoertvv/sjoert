@@ -1,12 +1,12 @@
 Collection of tools that I'm gathering while doing astronomy/astrophysics
 research with Python. For example,
 
- -- Create, merge, append with numpy.recarrays (`rec.py`)
- -- Make latex tables from (record) arrays (`latex.py`)
- -- Convert between magnitude and luminosity (`stellar.py`)
- -- I/O convenience for fits/ascii/json tables  (`io.py`)
- -- Convert MJD to anything (`simtime.py`)
- -- Binning, e.g. to make luminosity functions (`simstat.py`)
+ - Create, merge, append with numpy.recarrays (`rec.py`)
+ - Make latex tables from (record) arrays (`latex.py`)
+ - Convert between magnitude and luminosity (`stellar.py`)
+ - I/O convenience for fits/ascii/json tables  (`io.py`)
+ - Convert MJD to anything (`simtime.py`)
+ - Binning, e.g. to make luminosity functions (`simstat.py`)
 
 
 Requirements: 
