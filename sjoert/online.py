@@ -22,12 +22,6 @@ from sjoert.stellar import iau_name
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-try:
-    import sqlcl 
-except ImportError:
-    print('sqlcl not found, get_SDSS() will fail')
-    print('get it from: http://cas.sdss.org/dr7/en/help/download/sqlcl/')
-
 
 # change this variable to change the default input to all NED functions
 # or give NEDdir explicitly to each call
@@ -202,83 +196,6 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     
     return data
 
-
-def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
-    '''
-    >> data = get_SDSS(ra, dec, rad=1, dir='./' name='mydata', debug=False)
-
-    submit CAS job via sqlcl/sciserver, but this may not work anymore
-
-
-    input:
-     ra, dec (deg), can be arrays
-    optional input:
-      radius=1/60. (deg)
-      name if given, we write file name
-      silent=False shut it.
-    note:
-     slow for many object because we loop over input coords; 
-     this could be log(N) faster if I knew how 
-     to upload coordinates and run fgetNearByObjEq on this list. 
-
-    '''
-    from sciserver.casjobs import CasJobs
-
-    if np.isscalar(ra0):
-        ra0 = [ra0]
-        dec0 = [dec0]
-
-    out_list = [] 
-    for ra, dec in zip(ra0, dec0):
-        cas = SDSS_cas.replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad*60))
-    
-        if not(silent):
-            print('running CASjob:\n',cas)
-
-        #result = sqlcl.query(cas) # not supported anymore?
-        cas = CasJobs()
-        result = cas.executeQuery(sql=cas, context="MyDB", outformat="fits") # also fails
-
-        if not(silent):
-            print('CAS job done, now reading query...')
-
-        lines = result.readlines()
-
-        if debug:
-            print(ra, dec, lines)
-
-        if len(lines)<=2:
-            print('no sources found, for ra,dec:', ra, dec)
-            out_list.append(None)
-        else:
-            data = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
-            out_list.append(data)
-
-    if len(out_list)==0:
-        return None # no data, with one input
-
-    if len(out_list)==1:
-        out = out_list[0]
-
-    # this loop can be made more robust, 
-    if len(out_list)>1:
-        data_arr = np.repeat(out_list[0],1) # because here we assume the first entry yielded a match.
-        for dd in out_list[1:]:
-            if dd is not None:
-                data_arr = rec.merge_rec(data_arr, np.repeat(dd,1))
-            else:
-                data_arr = rec.merge_rec(data_arr, np.zeros(1,dtype=data_arr[0].dtype))
-            #data_arr =  np.concatenate(data_arr, dd)
-        out= data_arr
-
-
-    if name: 
-        if not(silent):
-            print('# of entries:', len(out))
-            print('writing to ', name)
-        pyfits.writeto(name, out, clobber=True)
-    
-    return out
 
 
 def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=False):
