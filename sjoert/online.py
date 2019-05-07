@@ -8,7 +8,7 @@ this is sjoert.dirs.catdir+NED/
 2011 - Sjoert
 '''
 
-import os, time, re
+import os, sys, time, re
 import numpy as np
 import shlex, subprocess
 import requests
@@ -18,35 +18,216 @@ import sjoert.dirs as dirs
 import sjoert.rec as rec
 from sjoert.io import readascii, pyfits, json2rec
 from sjoert.stellar import iau_name
+import sjoert.simstat
 
+import astropy.time
+import astropy.io.ascii
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-try:
-    import sqlcl 
-except ImportError:
-    print('sqlcl not found, get_SDSS() will fail')
-    print('get it from: http://cas.sdss.org/dr7/en/help/download/sqlcl/')
 
 
-# change this variable to change the default input to all NED functions
-# or give NEDdir explicitly to each call
-NEDdir = dirs.catdir+'NED/'
+def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
+    '''
+    download and safe PS1 DR2 stack and detections 
+    search radius is 1" 
+
+    >>> cats_dict, info_dict = get_PS(350.95256 -1.13618 name='TDE2') 
+
+    output:
+    - cats_dict: is a dict that contain the catalogs for 'stack' and 'detection'
+    - info_dict: contains the chi2, median, etc. of the different filters
+
+    input:
+    - name: path for saving data and plot
+    - t0: mjd, plot time relative to this; default is the year 2018 (58119)
+    - redo: force download even if we have the data on disk
+    - verbose: hallo henk?
+
+    '''
+
+    flt_dict = {1:'g', 2:'r', 3:'i', 4:'z', 5:'y'}
+
+    url_2fill = 'https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/' + \
+                '{0}.csv?flatten_response=false&raw=false&sort_by=distance&{1}&radius=0.0002778'
 
 
-#NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-datasearch?search_type=Photo_id&objid=80631&objname=_SOURCE_&img_stamp=YES&hconst=73.0&omegam=0.27&omegav=0.73&corr_z=1&of=table"' # doesn't work because of objid key
-NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?objname=_SOURCE_&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO"'
-NEDurl_radec = '''http://ned.ipac.caltech.edu/cgi-bin/objsearch?search_type=Near+Position+Search&in_csys=Equatorial&in_equinox=J2000.0&lon=_RA_d&lat=_DEC_d&radius=_RAD_&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&z_constraint=Unconstrained&z_value1=&z_value2=&z_unit=z&ot_include=ANY&nmp_op=ANY&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=Distance+to+search+center&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO'''
+    # read/save different PS1 catalog
+    astro_tab = {}
+
+    for catname in ['detection', 'stack']:
+
+        fname = name+'-PS_'+catname+'.csv'
+        if name and os.path.isfile(fname):
+            
+            if verbose:
+                print ('reading:', fname)
+            
+            astro_tab[catname] = astropy.io.ascii.read(fname)
+
+        else:
+            redo = True
+
+        if redo or not(name):
+            obs_str = 'ra={0:0.6f}&dec={1:+0.6f}'.format(ra, dec)
+
+            url = url_2fill.format(catname, obs_str)
+            if verbose:
+                print ('getting PS data from:')
+                print(url)
+
+            try:
+                r = requests.get(url, timeout=120)
+
+                table=r.content.decode()
+
+                # urlindex=content.find('/workspace/')
+                # urlindex2=content.find('.tbl')
+
+                # table=requests.get('https://irsa.ipac.caltech.edu'+content[urlindex:urlindex2]+'.tbl')
+
+            except Exception as e:
+                print ('PS: no connection to IRSA; url was:\n', url)
+                print (e)
+                return None, None
+
+            if table:
+                astro_tab[catname] = astropy.io.ascii.read(table)
+            else:
+                
+                if verbose:
+                    print ('no match')
+                return None, None
+
+            # save the data
+            if name:
+                with open(fname, 'w') as the_file:
+                    the_file.write(table)
+
+    
+    # short-hand
+    dd = astro_tab['detection']
+
+    if len(dd)==0:
+        return None, None
 
 
-#SDSSurl_radec = '''"http://skyserver.sdss.org/dr12/en/tools/search/x_radial.aspx?whichway=equitorial&ra=__RA__&dec=__DEC__&radius=__RAD__&min_u=0&max_u=20&min_g=0&max_g=20&min_r=0&max_r=20&min_i=0&max_i=20&min_z=0&max_z=20&format=csv&limit=100000"'''
-SDSSurl_radec = '''"http://skyserver.sdss.org/dr12/en/tools/search/x_results.aspx?searchtool=Radial&uband=&gband=&rband=&iband=&zband=&jband=&hband=&kband=&TaskName=Skyserver.Search.Radial&whichphotometry=optical&coordtype=equatorial&ra=__RA__&dec=__DEC__&radius=__RAD__&min_u=0&max_u=23&min_g=0&max_g=23&min_r=0&max_r=23&min_i=0&max_i=23&min_z=0&max_z=23&min_j=0&max_j=23&min_h=0&max_h=23&min_k=0&max_k=23&format=csv&TableName=&limit=1000"'''
+    # apply some quality cuts
+    iqual = (dd['infoFlag2']>-1) # this can be made better...
+    iqual = (dd['kronFlux']/dd['kronFluxErr']>1) * (dd['kronRad']>0) # this can be made better...
+
+    if verbose:
+        print ('# of observations', len(dd))
+        print ('# data point removed by quality cuts', sum(iqual==False))
+    
+    if sum(iqual)<1:
+        if verbose:
+            print ('no enough good data:', astro_tab)
+        return None, None
+
+    dd = dd[iqual]
+
+    xx = dd['obsTime']-t0
+
+    # compute for each band
+    N = {} # number of detection
+    mjd = {}
+    mag = {}
+    mag_err = {}
+    med = {} # median
+    smag = {} # from stack
+    chi2 = {} # chi2/dof
+
+    for i in [1,2,3,4,5]:
+        
+        flt = flt_dict[i]
+        idx = (dd['filterID']==i) 
+        N[flt] = sum(idx)
+
+        if len(astro_tab['stack'][flt+'KronMag'])>1:
+            print ('warning, mulitple matches! band={0}'.format(flt))
+            print ('distance (arcsec) is ',np.array(astro_tab['stack']['distance'])*3600)
+            print ('mag is ', np.array(astro_tab['stack'][flt+'KronMag']))
+            smag[flt] = float(astro_tab['stack'][flt+'KronMag'][0])
+            #key = input()
+        else:
+            smag[flt] = float(astro_tab['stack'][flt+'KronMag'])
+
+        if verbose:
+            print (flt, '# detections: {0}'.format(sum(idx)))
+        
+        if sum(idx):
+
+            mjd[flt] = dd[idx]['obsTime']
+            mag[flt] = -2.5*np.log10(dd[idx]['kronFlux']) + 8.9 # Jy to AB MAG
+            mag_err[flt] = 2.5/np.log(10) * dd[idx]['kronFluxErr']/dd[idx]['kronFlux']
+
+            med[flt] = np.median(mag[flt])
+            chi2[flt] = sum( (mag[flt]-med[flt])**2 / mag_err[flt]**2) / (sum(idx)-1)  # use all data with reported uncertainty
+            #inz1_chi=ybin1[3,:]>2 # need enough detection to compute scatter
+            #chi2[flt] = sum((ybin1[0,inz1_chi]-w1_med)**2 / ybin1[1,inz1_chi]**2) / sum(inz1_chi)          # use uncertainty estimated from scatter in each bin
+        else:
+            N[flt], med[flt], chi2[flt]=0, np.nan, np.nan
 
 
-SDSS_cas=\
-" select p.* \n from photoobjall p, dbo.fgetNearByObjEq(__RA__,__DEC__,__RAD__) n \n where p.objid=n.objid "
+    # and make a nice string that we can return
+    if N['g']==0 and N['r']==0:
+        ps_info = "PS: no match"
+    else:
+        ps_info = "PS: N(g)={0:0.0f}; N(r)={1:0.0f}".format(N['g'], N['r'])
 
-PS1_seach_url = 'http://archive.stsci.edu/panstarrs/search.php'
+    if N['g']>0:
+        ps_info += '; <g>={0:0.2f}'.format(med['g'])
+    if N['r']>0:
+        ps_info += '; <r>={0:0.2f}'.format(med['r'])
+
+    if not np.isnan(chi2['g']):
+        ps_info += '; chi2(g)={0:0.1f}'.format(chi2['g'])
+
+    if not np.isnan(chi2['r']):
+        ps_info += '; chi2(r)={0:0.1f}'.format(chi2['r'])
+ 
+    info_list = [ps_info]
+
+
+    # make a plot
+    if not os.path.isfile(name+'-PS_detections.pdf') or redo or wait:
+
+        import matplotlib
+        from matplotlib import pyplot as plt
+
+        plt.close()
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        
+        for i in [1,2,3,4,5]:
+            
+            flt = flt_dict[i]
+            #idx = (dd['filterID']==i) 
+
+            if N[flt]:
+                line = ax.errorbar(mjd[flt]-t0,mag[flt],mag_err[flt], fmt='s', alpha=0.9,label=flt)
+                ax.plot( (min(mjd[flt]-t0), max(mjd[flt]-t0)),(med[flt], med[flt]), '--', color=line[0].get_color())
+                
+                ax.plot( (min(mjd[flt]-t0), max(mjd[flt]-t0)),(smag[flt],smag[flt]), ':', color=line[0].get_color())
+            else:
+                ax.plot( (min(dd['obsTime']-t0), max(dd['obsTime']-t0)), (smag[flt],smag[flt]), ':', label=flt)
+                #ax.fill_between(xbin1[inz1], ybin1[0,inz1]+ybin1[1,inz1], ybin1[0,inz1]-ybin1[1,inz1], color=line[0].get_color(), alpha=0.5)
+
+
+        ax.set_ylim(ax.get_ylim()[::-1])
+        ax.set_xlabel('MJD - {0:0.0f}'.format(t0))
+        ax.set_ylabel('Kron mag')
+        ax.set_title("chi2(g)={0:0.1f}; chi2(r)={1:0.1f}; chi2(i)={2:0.1f} ".format(chi2['g'], chi2['r'], chi2['i']))
+        ax.legend()
+
+        if name:
+            ax.figure.savefig(name+'-PS_detections.pdf')
+        if wait:
+            ax.figure.show()
+            key = input()
+
+    return astro_tab, {'median':med, 'N':N, 'chi2':chi2, 'stack':smag}
 
 
 def ps1_cone_search(ra, dec, rad=1/60., do_chrome=False, go_headless=True,
@@ -56,7 +237,9 @@ def ps1_cone_search(ra, dec, rad=1/60., do_chrome=False, go_headless=True,
             chrome_driver_binary = "/usr/local/bin/chromedriver",
             phantomjs_driver_binary="/usr/local/bin/phantomjs"):
     '''
-    rec_arr = ps1_cone_seach(ra, dec, rad=1/60.)
+    UPDATE FROM 2019 -- BETTER TO IGNORE -- THIS HACK WAS ONLY USEFUL BEFORE PS DR2
+
+    >>> rec_arr = ps1_cone_seach(ra, dec, rad=1/60.)
 
     ra, dec, rad in degree
     
@@ -70,9 +253,10 @@ def ps1_cone_search(ra, dec, rad=1/60., do_chrome=False, go_headless=True,
 
     chrome driver binaries are kept here: http://chromedriver.storage.googleapis.com/index.html
     '''
+
+    PS1_seach_url = 'http://archive.stsci.edu/panstarrs/search.php'
     
     from selenium import webdriver # https://stackoverflow.com/questions/18868743/how-to-install-selenium-webdriver-on-mac-os
-
 
     cmd = {}
 
@@ -152,12 +336,6 @@ def ps1_cone_search(ra, dec, rad=1/60., do_chrome=False, go_headless=True,
 
 
 
-
-#https://sites.google.com/a/chromium.org/chromedriver/home
-
-
-
-
 def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     '''
     >> data = get_SDSS_simple(ra, dec, rad=1, dir='./' name='mydata')
@@ -174,8 +352,9 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     note, make 1e5 lines are returned, only basic imaging data (magnitudes)
 
     '''
+
+    SDSSurl_radec = '''"http://skyserver.sdss.org/dr12/en/tools/search/x_results.aspx?searchtool=Radial&uband=&gband=&rband=&iband=&zband=&jband=&hband=&kband=&TaskName=Skyserver.Search.Radial&whichphotometry=optical&coordtype=equatorial&ra=__RA__&dec=__DEC__&radius=__RAD__&min_u=0&max_u=23&min_g=0&max_g=23&min_r=0&max_r=23&min_i=0&max_i=23&min_z=0&max_z=23&min_j=0&max_j=23&min_h=0&max_h=23&min_k=0&max_k=23&format=csv&TableName=&limit=1000"'''
     url = SDSSurl_radec.replace('__RA__',str(float(ra))).replace('__DEC__', str(float(dec))).replace('__RAD__',str(rad*60))
-    #cas = SDSS_cas..replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad))
     
     if not(name):
         name = 'SDSS-'+iau_name(ra, dec)+'.csv'
@@ -202,84 +381,15 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
     
     return data
 
+# ----
+# some stuff for NED, used for "ragolu" paper (these function are very old by now and may not work with the latest NED)
 
-def get_SDSS(ra0, dec0, rad=1/60., name='', silent=False, debug=False):
-    '''
-    >> data = get_SDSS(ra, dec, rad=1, dir='./' name='mydata', debug=False)
+# change this variable to change the default input to all NED functions
+# or give NEDdir explicitly to each call
+NEDdir = dirs.catdir+'NED/'
 
-    submit CAS job via sqlcl/sciserver, but this may not work anymore
-
-
-    input:
-     ra, dec (deg), can be arrays
-    optional input:
-      radius=1/60. (deg)
-      name if given, we write file name
-      silent=False shut it.
-    note:
-     slow for many object because we loop over input coords; 
-     this could be log(N) faster if I knew how 
-     to upload coordinates and run fgetNearByObjEq on this list. 
-
-    '''
-    from sciserver.casjobs import CasJobs
-
-    if np.isscalar(ra0):
-        ra0 = [ra0]
-        dec0 = [dec0]
-
-    out_list = [] 
-    for ra, dec in zip(ra0, dec0):
-        cas = SDSS_cas.replace('__RA__',str(ra)).replace('__DEC__', str(dec)).replace('__RAD__',str(rad*60))
-    
-        if not(silent):
-            print('running CASjob:\n',cas)
-
-        #result = sqlcl.query(cas) # not supported anymore?
-        cas = CasJobs()
-        result = cas.executeQuery(sql=cas, context="MyDB", outformat="fits") # also fails
-
-        if not(silent):
-            print('CAS job done, now reading query...')
-
-        lines = result.readlines()
-
-        if debug:
-            print(ra, dec, lines)
-
-        if len(lines)<=2:
-            print('no sources found, for ra,dec:', ra, dec)
-            out_list.append(None)
-        else:
-            data = readascii(lines=lines[2:], names=lines[1].split(','), delimiter=',')
-            out_list.append(data)
-
-    if len(out_list)==0:
-        return None # no data, with one input
-
-    if len(out_list)==1:
-        out = out_list[0]
-
-    # this loop can be made more robust, 
-    if len(out_list)>1:
-        data_arr = np.repeat(out_list[0],1) # because here we assume the first entry yielded a match.
-        for dd in out_list[1:]:
-            if dd is not None:
-                data_arr = rec.merge_rec(data_arr, np.repeat(dd,1))
-            else:
-                data_arr = rec.merge_rec(data_arr, np.zeros(1,dtype=data_arr[0].dtype))
-            #data_arr =  np.concatenate(data_arr, dd)
-        out= data_arr
-
-
-    if name: 
-        if not(silent):
-            print('# of entries:', len(out))
-            print('writing to ', name)
-        pyfits.writeto(name, out, clobber=True)
-    
-    return out
-
+NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?objname=_SOURCE_&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO"'
+NEDurl_radec = '''http://ned.ipac.caltech.edu/cgi-bin/objsearch?search_type=Near+Position+Search&in_csys=Equatorial&in_equinox=J2000.0&lon=_RA_d&lat=_DEC_d&radius=_RAD_&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&z_constraint=Unconstrained&z_value1=&z_value2=&z_unit=z&ot_include=ANY&nmp_op=ANY&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=Distance+to+search+center&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO'''
 
 def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=False):
     '''
