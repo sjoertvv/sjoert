@@ -26,7 +26,6 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 
-
 def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
     '''
     download and safe PS1 DR2 stack and detections 
@@ -384,12 +383,15 @@ def get_SDSS_simple(ra, dec, rad=1/60., dir='./', name='', silent=False):
 # ----
 # some stuff for NED, used for "ragolu" paper (these function are very old by now and may not work with the latest NED)
 
+
 # change this variable to change the default input to all NED functions
 # or give NEDdir explicitly to each call
 NEDdir = dirs.catdir+'NED/'
 
 NEDurl = '"http://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?objname=_SOURCE_&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO"'
 NEDurl_radec = '''http://ned.ipac.caltech.edu/cgi-bin/objsearch?search_type=Near+Position+Search&in_csys=Equatorial&in_equinox=J2000.0&lon=_RA_d&lat=_DEC_d&radius=_RAD_&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&z_constraint=Unconstrained&z_value1=&z_value2=&z_unit=z&ot_include=ANY&nmp_op=ANY&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=Distance+to+search+center&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=NO'''
+
+
 
 def get_NED_name(name=None,ra=None, dec=None, rad=.1/60., NEDdir=NEDdir, redo=False):
     '''
