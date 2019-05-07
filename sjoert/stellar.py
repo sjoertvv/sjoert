@@ -21,11 +21,14 @@ h0 = 0.7 # the defaul H0
 
 import astropy.cosmology as cospy
 
+import astropy.units as u
+from astropy.coordinates import SkyCoord
+
 # import some useful stuff from pyspherematch's util.starutil_numpy
-try:
-    from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
-except ImportError:
-    print('starutil_numpy not found on system')
+# try:
+#     from starutil_numpy import radectolb, lbtoradec, ra2hmsstring, dec2dmsstring, hmsstring2ra, dmsstring2dec
+# except ImportError:
+#     print('starutil_numpy not found on system')
 
 
 import numpy as np
@@ -57,6 +60,28 @@ rad2deg = 180. / np.pi
 rad2ac = rad2deg*3600
 sqdegonsky = 129600. /np.pi
 year_in_sec = 31557600.
+
+def radectolb(ra, dec):
+    '''
+    >>> l, b = radectolb(ra, dec)
+
+    everything in degrees
+    '''
+    gc = SkyCoord(ra*u.degree, dec*u.degree, frame='icrs').galactic
+    l = gc.l.to_value()
+    b = gc.b.to_value()
+    return l, b
+
+def lbtoradec(l, b):
+    '''
+    >>> ra, dec = lvtoradec(l, b)
+
+    everything in degrees
+    '''
+    gc = SkyCoord(l*u.degree, b*u.degree, frame='galactic').fk5
+    ra = gc.ra.to_value()
+    dec = gc.dec.to_value()
+    return ra, dec
 
 
 def ahav(a):
