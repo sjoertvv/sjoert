@@ -72,8 +72,11 @@ def json2rec(jin, silent=False, verbose=False):
                     if len(jd[k])>float(dt_dict[k][1:]):
                         dt_dict[k] = 'S'+str(len(jd[k]))            
                 
+                elif dt_dict[k][0]=='U':
+                    if len(jd[k])>float(dt_dict[k][1:]):
+                        dt_dict[k] = 'U'+str(len(jd[k]))   
+
                 # or if the new dtype is different from the old one, we can't use this key for our table
-                # (can this even happen in proper json tables?)
                 elif (dt != dt_dict[k]) and (dt_dict[k]!='_skip'):
                     if verbose or not silent:
                         print('warning, key with different dtype, skipping this one:', k, jd[k], type(jd[k]))
