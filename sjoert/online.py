@@ -26,7 +26,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 
-def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
+def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False, fluxtype='kron'):
     '''
     download and safe PS1 DR2 stack and detections 
     search radius is 1" 
@@ -40,8 +40,9 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
     input:
     - name: path for saving data and plot
     - t0: mjd, plot time relative to this; default is the year 2018 (58119)
-    - redo: force download even if we have the data on disk
-    - verbose: hallo henk?
+    - redo=False: force download even if we have the data on disk
+    - fluxtype=kron: can also be set to psf
+    - verbose=False: talk to me 
 
     '''
 
@@ -49,6 +50,14 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
 
     url_2fill = 'https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/' + \
                 '{0}.csv?flatten_response=false&raw=false&sort_by=distance&{1}&radius=0.0002778'
+
+    fluxtype = fluxtype.lower() # lets be helpful
+
+    # deal with inconsitent columnnames between PS1 cvs files
+    if fluxtype=='psf':
+        stack_fluxtype = 'PSF'
+    else:
+        stack_fluxtype = 'Kron'
 
 
     # read/save different PS1 catalog
@@ -62,7 +71,7 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
             if verbose:
                 print ('reading:', fname)
             
-            astro_tab[catname] = astropy.io.ascii.read(fname)
+            astro_tab[catname] = astropy.io.ascii.read(fname, delimiter=',', format='fast_csv', fast_reader=True) # this is kinda slow?
 
         else:
             redo = True
@@ -113,7 +122,9 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
 
     # apply some quality cuts
     iqual = (dd['infoFlag2']>-1) # this can be made better...
-    iqual = (dd['kronFlux']/dd['kronFluxErr']>1) * (dd['kronRad']>0) # this can be made better...
+    iqual = (dd[fluxtype+'Flux']/dd[fluxtype+'FluxErr']>1) 
+    if fluxtype=='kron':
+        iqual *= (dd[fluxtype+'Rad']>0) # this can be made better...
 
     if verbose:
         print ('# of observations', len(dd))
@@ -137,34 +148,43 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
     smag = {} # from stack
     chi2 = {} # chi2/dof
 
+
+
     for i in [1,2,3,4,5]:
         
         flt = flt_dict[i]
-        idx = (dd['filterID']==i) 
+        idx = (dd['filterID']==i) * (dd[fluxtype+'Flux']/dd[fluxtype+'FluxErr']>1)
         N[flt] = sum(idx)
 
-        if len(astro_tab['stack'][flt+'KronMag'])>1:
-            print ('warning, mulitple matches! band={0}'.format(flt))
+        if len(astro_tab['stack'][flt+stack_fluxtype+'Mag'])>1:
+            print ('warning, mulitple matches in Stack... band={0}'.format(flt))
             print ('distance (arcsec) is ',np.array(astro_tab['stack']['distance'])*3600)
-            print ('mag is ', np.array(astro_tab['stack'][flt+'KronMag']))
-            smag[flt] = float(astro_tab['stack'][flt+'KronMag'][0])
+            print ('mag is ', np.array(astro_tab['stack'][flt+stack_fluxtype+'Mag']))
+            smag[flt] = float(astro_tab['stack'][flt+stack_fluxtype+'Mag'][0])
             #key = input()
         else:
-            smag[flt] = float(astro_tab['stack'][flt+'KronMag'])
+            smag[flt] = float(astro_tab['stack'][flt+stack_fluxtype+'Mag'])
 
         if verbose:
             print (flt, '# detections: {0}'.format(sum(idx)))
-        
+
+
         if sum(idx):
 
             mjd[flt] = dd[idx]['obsTime']
-            mag[flt] = -2.5*np.log10(dd[idx]['kronFlux']) + 8.9 # Jy to AB MAG
-            mag_err[flt] = 2.5/np.log(10) * dd[idx]['kronFluxErr']/dd[idx]['kronFlux']
+            mag[flt] = -2.5*np.log10(dd[idx][fluxtype+'Flux']) + 8.9 # Jy to AB MAG
+            mag_err[flt] = 2.5/np.log(10) * dd[idx][fluxtype+'FluxErr']/dd[idx][fluxtype+'Flux']
 
             med[flt] = np.median(mag[flt])
             chi2[flt] = sum( (mag[flt]-med[flt])**2 / mag_err[flt]**2) / (sum(idx)-1)  # use all data with reported uncertainty
             #inz1_chi=ybin1[3,:]>2 # need enough detection to compute scatter
             #chi2[flt] = sum((ybin1[0,inz1_chi]-w1_med)**2 / ybin1[1,inz1_chi]**2) / sum(inz1_chi)          # use uncertainty estimated from scatter in each bin
+
+            # if verbose:
+            #     print ('Flux (all)      :',dd[dd['filterID']==i][fluxtype+'Flux'])
+            #     print ('Mag  (SNR>1)    :', mag[flt])
+        
+
         else:
             N[flt], med[flt], chi2[flt]=0, np.nan, np.nan
 
@@ -208,7 +228,8 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
                 line = ax.errorbar(mjd[flt]-t0,mag[flt],mag_err[flt], fmt='s', alpha=0.9,label=flt)
                 ax.plot( (min(mjd[flt]-t0), max(mjd[flt]-t0)),(med[flt], med[flt]), '--', color=line[0].get_color())
                 
-                ax.plot( (min(mjd[flt]-t0), max(mjd[flt]-t0)),(smag[flt],smag[flt]), ':', color=line[0].get_color())
+                if smag[flt]>0:
+                    ax.plot( (min(mjd[flt]-t0), max(mjd[flt]-t0)),(smag[flt],smag[flt]), ':', color=line[0].get_color())
             else:
                 ax.plot( (min(dd['obsTime']-t0), max(dd['obsTime']-t0)), (smag[flt],smag[flt]), ':', label=flt)
                 #ax.fill_between(xbin1[inz1], ybin1[0,inz1]+ybin1[1,inz1], ybin1[0,inz1]-ybin1[1,inz1], color=line[0].get_color(), alpha=0.5)
@@ -216,7 +237,7 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False):
 
         ax.set_ylim(ax.get_ylim()[::-1])
         ax.set_xlabel('MJD - {0:0.0f}'.format(t0))
-        ax.set_ylabel('Kron mag')
+        ax.set_ylabel(fluxtype+' mag')
         ax.set_title("chi2(g)={0:0.1f}; chi2(r)={1:0.1f}; chi2(i)={2:0.1f} ".format(chi2['g'], chi2['r'], chi2['i']))
         ax.legend()
 
