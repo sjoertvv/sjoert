@@ -200,6 +200,7 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, return_zero=Fa
 def binthem(x, y, yerr=None, bins=10, range=[], 
             use_mean=False,use_sum=False, use_wmean=False,
             cl=0.9, poisson=False, std=False, sqrtN=True, 
+            smart_expand=True,
             silent=False):
     '''
     >> xmid, ymid = binthem(x, y)
@@ -208,7 +209,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
 
     output:  
      - xmid  (N) the mean value of x for each bin  
-     - ymid  (4,N) containing the [median/mean/total value, uncertainty/dispersion, number in bin, std of xbin]
+     - ymid  (4,N) containing the [median/mean/total value, -/+ of uncertainty/dispersion, number in bin]
 
     input:
      - x,y  equal length arrays
@@ -221,7 +222,8 @@ def binthem(x, y, yerr=None, bins=10, range=[],
      - sqrtN=True  set to False to use std only
      - use_mean=False  use mean (median is default) 
      - use_sum=False sum bin content
-     - use_wmean  compute weighted mean, requires yerr= input
+     - use_wmean=False  compute weighted mean, requires yerr= input
+     - smart_expand=False, if set, we try to increase bins to catch clusters of data (warning: experimentenal!)
      - silent  shutup
     '''
 
@@ -234,9 +236,22 @@ def binthem(x, y, yerr=None, bins=10, range=[],
         if len(range)==2:
             x_bins = np.linspace(range[0], range[1], bins)
         else:
-            x_bins = np.linspace(np.min(x), np.max(x), bins) #removed in 2015: max()*1.01
+            x_bins = np.linspace(np.min(x), np.max(x), bins) 
     else:
-        x_bins = bins
+        x_bins = bins.copy()
+
+    if smart_expand:
+        
+        for i in np.arange(1,len(x_bins)):
+            dbin = x_bins[i]-x_bins[i-1]
+            iright = x>x_bins[i]            
+            if sum(iright):
+                # points closer to the current bins than next bins
+                if min(x[iright]-x_bins[i])<dbin/2.:
+                    if not silent:
+                        print ('adjusting this bin', x_bins[i], 'by ', dbin/2.)
+                        print ('new points added:', x[iright][x[iright]-x_bins[i]<dbin/2.])
+                    x_bins[i] = x_bins[i] + dbin/2.
 
     xmid = np.zeros(len(x_bins)-1)
     ymid = np.zeros((5,len(x_bins)-1))
@@ -283,6 +298,10 @@ def binthem(x, y, yerr=None, bins=10, range=[],
 
         if not silent:
             print('{0:0.2f} - {1:0.2f} ({2:0.2f})  {3:0.0f}  [{4:0.2f}  {5:0.2f}  {6:0.2f}]'.format(x_bins[i],x_bins[i+1], np.std(x[ibin]), ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i]))
+
+    if sum(ymid[3,:]) != len(x):
+        print ('binthem: WARNING: more points in bins ({0}) compared to lenght of input ({1}), please check your bins'.format(sum(ymid[3,:]), len(x)))
+        key = input()
 
     return xmid, ymid
 
