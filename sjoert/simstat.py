@@ -200,7 +200,7 @@ def his2scat(arr, bins=10, range=None, conv=0.8413, logbin=False, return_zero=Fa
 def binthem(x, y, yerr=None, bins=10, range=[], 
             use_mean=False,use_sum=False, use_wmean=False,
             cl=0.9, poisson=False, std=False, sqrtN=True, 
-            smart_expand=True,
+            smart_expand=False,
             silent=False):
     '''
     >> xmid, ymid = binthem(x, y)
@@ -299,7 +299,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
         if not silent:
             print('{0:0.2f} - {1:0.2f} ({2:0.2f})  {3:0.0f}  [{4:0.2f}  {5:0.2f}  {6:0.2f}]'.format(x_bins[i],x_bins[i+1], np.std(x[ibin]), ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i]))
 
-    if sum(ymid[3,:]) != len(x):
+    if sum(ymid[3,:]) <= len(x):
         print ('binthem: WARNING: more points in bins ({0}) compared to lenght of input ({1}), please check your bins'.format(sum(ymid[3,:]), len(x)))
         key = input()
 
