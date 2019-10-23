@@ -299,7 +299,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
         if not silent:
             print('{0:0.2f} - {1:0.2f} ({2:0.2f})  {3:0.0f}  [{4:0.2f}  {5:0.2f}  {6:0.2f}]'.format(x_bins[i],x_bins[i+1], np.std(x[ibin]), ymid[3,i], ymid[0,i], ymid[1,i], ymid[2,i]))
 
-    if sum(ymid[3,:]) <= len(x):
+    if sum(ymid[3,:]) > len(x):
         print ('binthem: WARNING: more points in bins ({0}) compared to lenght of input ({1}), please check your bins'.format(sum(ymid[3,:]), len(x)))
         key = input()
 
