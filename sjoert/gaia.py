@@ -4,6 +4,8 @@ from math import radians
 
 import numpy as np
 
+catsHTM_path = '/Volumes/LaCie/catsHTM/'
+
 def sdss_to_gaia(g,i, DR=2):
     gi = g-i
 
@@ -12,7 +14,7 @@ def sdss_to_gaia(g,i, DR=2):
     else:
         return g -0.074189  -0.51409*gi -0.080607*gi**2   +0.0016001*gi**3 #(Evans+15 DR2)
 
-def get_gaia(ra, dec, dist, catsHTM_path='/Volumes/LaCie/catsHTM/', verbose=False):
+def get_gaia(ra, dec, dist, catsHTM_path=catsHTM_path, verbose=False):
     '''
     >>> recarr, distarr = get_gaia(ra, dec, dist, catsHTM_path='/somewhere/')
     function to run catsHTM.cone_search and convert to np.array
