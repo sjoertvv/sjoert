@@ -28,7 +28,7 @@ def list2rec(dd, n=1, default=False):
 
     return newrec
 
-def dict2rec(dd, n=1, default=False):
+def dict2rec(dd, n=1, default=False, verbose=False):
     '''
     return empty records arrray from dictionary keys
     >> rec = dict2rec(dict, n=10, default=False)
@@ -41,7 +41,8 @@ def dict2rec(dd, n=1, default=False):
     pre_dtype = []
     for k in keys:
         this_type  = np.array(dd[k]).dtype
-        print(k, this_type)
+        if verbose:
+            print(k, this_type)
         pre_dtype+= [(k, this_type)]
     newrec = np.empty(n ,dtype=np.dtype(pre_dtype))
 
@@ -75,6 +76,26 @@ def slice_cols(ori_rec, sub_cols):
     for n in sub_cols:
         new_rec[n] = ori_rec[n]
     return new_rec
+
+def join_rec(d1,d2):
+    '''
+     >> new_rec = join_rec(d1,d2)
+    add the columns of d1 to d2
+    d1 and d2 have to be equal length
+    '''
+    
+    dt = (d1.dtype.descr + d2.dtype.descr)
+
+    # remove columns with the same name
+    dt = [x for i, x in enumerate(dt) if x[0] not in [x[0] for x in dt[i+1:]] ]
+    out = np.zeros(len(d1), dtype=dt)
+
+    for k in d1.dtype.descr:
+        out[k[0]] = d1[k[0]]
+    for k in d2.dtype.descr:
+        out[k[0]] = d2[k[0]]
+
+    return  out
 
 
 def merge_rec(d1,d2):
