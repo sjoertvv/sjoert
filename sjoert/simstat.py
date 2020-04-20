@@ -32,6 +32,14 @@ def sammy(y,x, n=int(1e6)):
     
     return np.interp(np.random.rand(int(n)), y_int, x_int)
 
+def wmedian(d, weight):
+    '''
+    >> out =  wmedian(d, weight)
+    compute the weighted median, no interpolation is done 
+    input should be numpy array
+    '''
+    return d[weight.cumsum()>=weight.sum()/2][0]   
+
 def wmean(d, ivar):
     '''
     >> mean = wmean(d, ivar)
@@ -301,7 +309,7 @@ def binthem(x, y, yerr=None, bins=10, range=[],
 
     if sum(ymid[3,:]) > len(x):
         print ('binthem: WARNING: more points in bins ({0}) compared to lenght of input ({1}), please check your bins'.format(sum(ymid[3,:]), len(x)))
-        key = input()
+        #key = input()
 
     return xmid, ymid
 
