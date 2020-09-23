@@ -5,6 +5,14 @@ import sjoert
 from scipy.special import gamma as Gamma
 from numpy import log10, log, sqrt
 
+
+'''
+note, for all functions below eps_e= eps_e / eps_B
+
+the formal/numerical equipartition is  ε_B /ε_e ≈ 6/11
+'''
+
+
 testing = False # todo, moving testing of these functions to seperate script
 
 # constants
@@ -12,6 +20,7 @@ sigma_T = 6.65e-25 # cm^2
 c = 3e10 # cm/s
 qe = 4.8e-10 # esu
 me = 9.11e-28 # gram
+mp = 1.67e-24 # gram
 k = 1.38e-16 # erg/K
 
 # defauls
@@ -36,10 +45,6 @@ def cooling99(B, nu):
 	gam = gamma_e99(B, nu)
 	return 7.7e6 * (B)**-2 *(gam/100.)**-1 # same as Ghisellini Eq 4.11
 
-def cooling_extra(B, nu):
-	gam = gamma_e(B, nu)
-	return 7.7e6 * (B)**-2 *(gam/100.)**-1 # same as Ghisellini Eq 4.11
-
 
 if testing:
 	print (cooling99(0.4, 16e9)/24/3600)
@@ -48,18 +53,208 @@ if testing:
 
 	key = input()
 
-z = 0.0205778 # 14li redshift
-D = sjoert.stellar.lumdis(z, h=0.7)
-def slab(B,nu, r, D=D, p=2.5, gamma_max=1e2, gamma_min=gamma_min, eps_e=1):
+def Beq(S_peak, D_L, nu_p, alpha=1, f=0.5,  who='Chevalier'):
+	'''
+	B_eq = Beq(S_peak, D_L, nu_p, z)
+
+	Chevalier Eq. 14 (p=3), no z scaling
+	'''
+	return 0.58 * \
+		alpha**(-4/19) * \
+		(S_peak/1e3)**(-2/19.) * \
+		(D_L/(1e6*sjoert.stellar.parsec))**(-4/19) * \
+		(nu_p/5e9) * \
+		(f/0.5)**(-4/19)
+
+
+def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1., 
+		fA=1, fV=1, f=1, 
+		p=3,
+		epsilon_e=1,
+		alpha=6/11,
+		verbose=False, who='Barniol'):
+	'''
+	R_eq = Req(S_peak, D_L, nu_p, z, fA=1, fV=1)
+
+	Barniol-Duran+13 Eq. 21
+
+	S_peak in mJy
+	D_L = cm
+	nu_p in GHz (observed)
+	Gamma_bulk=1. is the bulk Lorentz factor
 	
+	alpha=6/11 	eps_B /eps_e is "true equipartition" (only used in Chevalier for now, 
+				note the paper seems to have the inverse below Eq. 10, but that must be wrong)
+	
+	f=1  		filling factor of Chevalier, such that Volume=4/3 *f pi*R**3
+
+	epsilon_e=None 	the fraction of the proton energy that goes into electrons 
+				 	this is used to estimate gamma_min, but only works when Gamma>few!
+				 	gamma_min=2 is enforced by default
+
+	return radius in cm
+	'''
+
+	# Eq. 27
+	if who=='Barniol':
+		
+		if epsilon_e and Gamma_bulk>1.1:
+			xhi_e = (p-2)/(p-1) * epsilon_e * mp/me
+			xhi_e = np.clip(xhi_e, 2/(Gamma_bulk-1))
+		else:
+			xhi_e = 2
+
+		out= 1e17 * \
+			(21.8 * (525)**(p-1))**(1/(13+2*p)) * \
+			(xhi_e**((2-p)/(13+2*p))) * \
+			(S_peak**((6+p)/(13+2*p))) * \
+			((D_L/1e28)**(2*(p+6)/(13+2*p))) * \
+			((nu_p/1e10)**(-1)) * \
+			((1+z)**(-(19+3*p)/(13+2*p))) * \
+			(fA**(-(5+p)/(13+2*p))) * \
+			(fV**(-1/(13+2*p))) * \
+			(Gamma_bulk**((p+8)/(13+2*p)))
+			
+		if epsilon_e:
+	
+			out*= (1+1/epsilon_e)**(1/(13+2*p)) # increase by accounting for hot protons
+
+			if Gamma_bulk>1.1:
+				out*=((Gamma_bulk-1)**((2-p)/(13+2*p)))
+		
+		# geomtrical correction for Newonian case
+		if Gamma_bulk<1.1:
+			out*=(4**(1/(13+2*p)))
+
+		return out
+		
+
+	if who=='Alexander':
+		return 4**(1/19) * \
+		 3.2e15 * 	(S_peak)**(9/19) * \
+					(D_L/1e26)**(18/19) * \
+					(nu_p/1e10)**(-1) * \
+					(1+z)**(-10/19) * \
+					fA**(-8/19) *\
+					fV**(-1/19)
+
+	# Eq. 13 (p=3, spherical non-relativistic), no z depent from Alexander
+	if who =='Chevalier':
+		return 8.8e15 * \
+			alpha**(-1/19) * \
+			(S_peak/1e3)**(9/19) * \
+			(D_L / (1e6*sjoert.stellar.parsec))**(18/19) * \
+			(nu_p / 5e9)**-1 * \
+			(f/0.5)**(-1/19) * \
+			(1+z)**(-10/19) 
+
+def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=1, f=1, 
+		p=3,
+		epsilon_e=1,
+		alpha=6/11,
+		verbose=False, who='Barniol'):
+	'''
+	E_eq = Req(S_peak, D_L, nu_p, z, fA=1, fV=1)
+
+	Barniol-Duran+13 Eq. 25
+
+	S_peak in mJy
+	D_L = cm
+	nu_p in Hz (observed)
+	Gamma_bulk=1 is the bulk Lorentz factor
+	
+	f=1  filling factor of Chevalier, such that Volume=4/3 *f pi*R**3
+
+	alpha=6/11 	eps_B /eps_e is "true equipartition" (only used in Chevalier for now, 
+				note the paper seems to have the inverse below Eq. 10, but that must be wrong)
+
+	epsilon_e=None 	the fraction of the proton energy that goes into electrons 
+				 	this can also be used to estimate gamma_min, but only works when Gamma>few
+				 	gamma_min=2 is enforced by default
+
+	return energy in erg
+	'''
+
+	# Eq. 28
+	if who=='Barniol':
+		
+		if epsilon_e and Gamma_bulk>1.1:
+			xhi_e = (p-2)/(p-1) * epsilon_e * mp/me
+			xhi_e = np.clip(xhi_e, 2/(Gamma_bulk-1))
+		else:
+			xhi_e = 2
+
+		out= 1.3e48 * \
+			((21.8)**(-2*(p+1)/(13+2*p))) * \
+			(( 525**(p-1) * xhi_e**(2-p) )**(11/(13+2*p))) * \
+			(S_peak**((14+3*p)/(13+2*p))) * \
+			((D_L/1e28)**(2*(14+3*p)/(13+2*p))) * \
+			((nu_p/1e10)**(-1)) * \
+			((1+z)**(-(27+5*p)/(13+2*p))) * \
+			(fA**(-3*(p+1)/(13+2*p))) * \
+			(fV**(2*(p+1)/(13+2*p))) * \
+			(Gamma_bulk**(-(5*p+16)/(13+2*p))) 
+
+		if epsilon_e:
+			out*= (1+1/epsilon_e)**(11/(13+2*p)) # increase by accounting for hot protons
+			if Gamma_bulk>1.1:
+				out*=((Gamma_bulk-1)**(-11*(p-2)/(13+2*p)))
+
+
+		# geomtrical correction for Newonian case
+		if Gamma_bulk<1.1:
+			out*=(4**(11/(13+2*p)))
+
+
+		return out
+
+	# Eq. 25, give an absolute lower limit below energy from other electorn not accounted for
+	if who=='Barniol_at_nu_p':
+		out= 2.5e49 * (S_peak)**(20/17) * \
+						(D_L/1e28)**(40/17) * \
+						(nu_p/1e10)**(-1) * \
+						(1+z)**(-37/17) * \
+						Gamma**(-26/17) *\
+						fA**(-9/17) *\
+						fV**(6/17) 
+		if Gamma_bulk<1.1:
+			 out*=4**(11/17)
+		return out
+
+	if who=='Alexander':
+		
+		return 4**(11/19) * 1.9e46 * (S_peak)**(23/19) * \
+							(D_L/1e26)**(46/19) * \
+							(nu_p/1e10)**(-1) * \
+							(1+z)**(-42/19) * \
+							fA**(-12/19) *\
+							fV**(8/19) 
+
+	# adding z-dependence from Alexander
+	if who=='Chevalier':
+		#eta = 1/alpha/(6/11)
+		return  (1+z)**(-42/19) * \
+				4/3 * (f/0.5) * Req(S_peak, D_L, nu_p, z*0, f=f, alpha=alpha, who='Chevalier')**3 * \
+				 Beq(S_peak, D_L, nu_p, f=f, alpha=alpha, who='Chevalier')**2 / (8*pi)
+
+
+def slab(B,nu, r, D=3e27, p=2.5, gamma_max=1e3, gamma_min=1, eps_e=1):
+	'''
+	Snu = slab(B,nu, r, D=D, p=2.5, gamma_max=1e3, gamma_min=1, eps_e=1):
+
+	the equation below works because Ptot is not per unit solid angle
+	eps = Ptot/4pi
+	and S_nu = Omega*I_nu = pi*(d/D)**2 I_nu 
+	'''
 	#kap1 = 2.9e-18 * B**(4.25) * nu**(-3.25)
 	#eps1 = 5.6e-20 * B**(3.75) * nu**(-0.75)
 
 	kap1 = alpha_nu(B, nu, p, gamma_max, gamma_min, eps_e)
-	eps1 = Ptot(B, nu, p, gamma_max, gamma_min, eps_e)
+	eps1 = Ptot(B, nu, p, gamma_max, gamma_min, eps_e)/(4*pi)
 
-	return r**2 / (4*D**2) * eps/kap * ( 1-np.exp(-kap*r) )
-	#return r**2 / (4*D**2) * eps1/kap1 * ( 1+np.exp(-kap1*r)*(r*kap1/6-1) )
+	d = r*2
+	return np.pi * r**2 / (D**2) * eps1/kap1 * ( 1-np.exp(-kap1*d) )
+	#return np.pi * r**2 / (D**2) * eps1/kap1 * ( 1+np.exp(-kap1*d)*(d*kap1/6-1) ) # from Flacke99
 
 # Larmor frequency Eq. 4.4.1
 def nu_L(B):
@@ -120,13 +315,16 @@ def Pomega(B, x):
 
 # Eq 6.21a
 def Ptot(B, nu_in, p=2.5, gamma_max=gamma_max, gamma_min=gamma_min, eps_e=1):
+	'''
+	radiated power per unit frequency per unit volume per unit time
+	'''
 	#gamma_arr = np.logspace(log10(gamma_min), log10(gamma_max), N_arr)
 	gamma_arr = np.linspace(gamma_min, gamma_max, N_arr)
 	omega_arr = 3*gamma_arr**2*qe*B / (2*me*c) # Eq. 6.17c
 	if np.isscalar(nu_in):
 		nu_in = np.array([nu_in])
 	
-	norm = K(B, p, gamma_max, gamma_min, eps_e)* sina_avg(p)* 2*pi
+	norm = K(B, p, gamma_max, gamma_min, eps_e)* sina_avg(p) * 2*pi
 	out = np.zeros(len(nu_in))
 	for i, nu in enumerate(nu_in):
 		x =  (nu*(2*pi)) / omega_arr 
@@ -135,13 +333,19 @@ def Ptot(B, nu_in, p=2.5, gamma_max=gamma_max, gamma_min=gamma_min, eps_e=1):
 
 
 if testing:
-	print ('R&L =1.99 :', Ptot(1, 1e9, p=1.99))
-	print ('Giz p=1.99 :',eps(1, 1e9, p=1.99))
-	print ('Heino p=2  :', 5.7e-19* 1/np.log(1e4)) # https://books.google.com/books?id=2RDkj8NipEkC&printsec=frontcover&source=gbs_ge_summary_r&cad=0#v=onepage&q=absorption&f=false
+	print ('emission coeff or total power:')
+	print ('R&L (interp) p=2 :', Ptot(1, 1e9, p=2.01, gamma_max=1e4))
+	print ('R&L (gamma) p=2  :', eps(1, 1e9, p=2.01))
+	print ('VLBI Book   p=2  :', 5.7e-19* 1/np.log(1e4)) # https://books.google.com/books?id=2RDkj8NipEkC&printsec=frontcover&source=gbs_ge_summary_r&cad=0#v=onepage&q=absorption&f=false, page 22
 	print ('')
-	print ('R&L =2.5    :', Ptot(1, 1e9, p=2.5))
-	print ('Giz (p=2.5)  :', eps(1, 1e9, p=2.5))
+	print ('R&L (interp) p=2.5    :', Ptot(1, 1e9, p=2.5))
+	print ('R&L (gamma) (p=2.5)  :', eps(1, 1e9, p=2.5))
 	print ('Heino (p=2.5):',5.6e-20)
+	print ('')
+	print ('absorption:')
+	print ('R&L (interp) p=2    :', alpha_nu(1, 1e9, p=2.01, gamma_max=1e4))
+	print ('VLBI Book (p=2.0)	:',4.5e-12/np.log(1e4))
+
 
 # R&L Eq. 6.52
 def alpha_nu(B, nu_in, p=2.5, gamma_max=gamma_max, gamma_min=gamma_min, eps_e=1):	
@@ -157,7 +361,7 @@ def alpha_nu(B, nu_in, p=2.5, gamma_max=gamma_max, gamma_min=gamma_min, eps_e=1)
 	norm = (p+2)*c**2 * sina_avg(p) * Ke(B, p, gamma_max, gamma_min, eps_e) * 2*pi
 	for i, nu in enumerate(nu_in): 
 		x =  (nu*(2*pi)) / omega_arr 
-		out[i] = 1 / (8*pi*nu**2) *np.trapz(Pomega(B, x) *E_arr**(-p)/E_arr, E_arr) # without change of variables, gives same answer as next time 
+		out[i] = 1 / (8*pi*nu**2) *np.trapz(Pomega(B, x) *E_arr**(-p)/E_arr, E_arr) # without change of variables, gives same answer as next line 
 			#Ke(B, p)*(me*c**2)**(-p) * np.trapz(Ptot(B, nu, p) *gamma_arr**(-p)/gamma_arr, gamma_arr) # after change of variables
 
 	return norm*out
@@ -219,7 +423,7 @@ if testing:
 	plt.yscale('log')
 	plt.xscale('log')
 
-	key = raw_input()
+	key = input()
 
 
 
@@ -234,7 +438,7 @@ if testing:
 	plt.yscale('log')
 	plt.xscale('log')
 
-	key	=raw_input()
+	key	=input()
 
 	#print (kappa(1, 1e9, p=2.5))
 	#print (kappa(1, 1e9, p=3))
