@@ -2,7 +2,7 @@
 Collection of tools that I'm gathering/writing while doing astronomy/astrophysics
 research with Python.
 
-2010-2018, Sjoert van Velzen
+2010-2020, Sjoert van Velzen
 """
 from __future__ import print_function 
 
@@ -16,12 +16,12 @@ from . import stellar
 from . import simstat
 from . import io
 from . import rec
-from . import dirs
+#from . import dirs # doesnt work on windows
 from . import html
 from . import plot
 from . import online
 from . import latex
-from . import sdss
+#from . import sdss
 from . import fits
 from . import cutout
 from . import gaia
