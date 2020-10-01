@@ -10,12 +10,6 @@ various function for astronomy.
 2018 Apr - new default H0: h=0.7
 '''
 
-try:
-    from k3match import celestial as spherematch
-except ImportError:
-    print('k3match import failed')
-    print('the fof function (one_group) wont work')
-    print('(you can obtain k3match from pschella.github.com/k3match/)')
 
 h0 = 0.7 # the defaul H0
 
@@ -144,6 +138,13 @@ def one_group(ra0, dec0, ra, dec, link_length, group_in=None,
      - cat=np.recarray, containing ra dec columns, only used if apl keyword is True
      - verbose=False
     '''
+
+    try:
+        from k3match import celestial as spherematch
+    except ImportError:
+        print('k3match import failed')
+        print('(you can obtain k3match from pschella.github.com/k3match/)')
+
 
     if apl:
         verbose=True
@@ -483,8 +484,9 @@ def mag2lum(M, z, nu=None, band=None,
                       h=h0, Om0=.3):
     '''
     lum  = mag2lum(22.5, 0.1, band='r')
-    convert AB magnitude to luminosity in erg/s
+    convert AB magnitude to luminosity "L_nu*nu" in erg/s
     input nu in Hz, choose from band=[FUV, NUV, u,g,r,i,z]
+    note frequency is not redshift by default
     can overwrite default cosmology using keywords (see lumdis docstring)
     '''
 
@@ -618,6 +620,9 @@ def MBH_sigma(sigma, source=default_source):
     
     if source=='FerrareseFord05':
         return 1.66e8 * (sigma/200.)**4.86
+
+    if source=='Shankar16':
+        return 10**7.8 * (sigma/200.)**5.7
                  
     raise Exception('source for M-sigma relation not recognized, returning None')
 
