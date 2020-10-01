@@ -1,5 +1,5 @@
 
-import catsHTM 
+
 from math import radians
 
 import numpy as np
@@ -21,6 +21,13 @@ def get_gaia(ra, dec, dist, catsHTM_path=catsHTM_path, verbose=False):
      ra, dec in deg.
      dist in arcsec
     '''
+    try:
+        import catsHTM 
+    except ImportError:
+        print ('import catsHTM failed')
+        print ('try: \n')
+        print ('pip install catsHTM')
+        
     # some files are corrupted, we have to catch the exception
     try:
         srcs, colnames, colunits = catsHTM.cone_search(
