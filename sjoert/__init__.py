@@ -24,7 +24,7 @@ from . import latex
 from . import sdss
 from . import fits
 from . import cutout
-from . import gaia
+#from . import gaia
 from . import swift
 
 #from . import misc
