@@ -7,6 +7,7 @@ this is sjoert.dirs.catdir+NED/
 
 2011 - Sjoert
 '''
+from __future__ import print_function 
 
 import os, sys, time, re
 import numpy as np
@@ -24,6 +25,286 @@ import astropy.time
 import astropy.io.ascii
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+
+import matplotlib
+from matplotlib import pyplot as plt
+
+selcols_str = 'selcols=ra,dec,sigra,sigdec,mjd,w1mpro,w1sigmpro,w1flux,w1sigflux,w1sky,w2flux,w2sigflux,w2mpro,w2sigmpro,w2sky,cc_flags,nb,saa_sep,qual_frame,w1mpro_allwise,w1sigmpro_allwise,w2mpro_allwise,w2sigmpro_allwise,w3mpro_allwise,w3sigmpro_allwise,w4mpro_allwise,w4sigmpro_allwise'
+
+url_to_fill =\
+    'https://irsa.ipac.caltech.edu/cgi-bin/Gator/nph-query?catalog=neowiser_p1bs_psd&objstr={0}&radius=2.5&spatial=Cone&radunits=arcsec&'+selcols_str
+
+def get_WISE(ra, dec, name='', t0=58119, wait=False, verbose=True, redo=False):
+    
+    '''
+    query IPAC to get allWISE (and neoWISE)
+    >> catalog, class_str = get_WISE(ra, dec, name='', t0=58119,  wait=False, verbose=True, redo=False)
+
+    input:
+        - name:  if given, we save the ipac table to this path 
+        - t0=:   normalization for plotting
+        - redo:  forve new download even if catalog name is found
+
+    '''    
+
+
+    if name and os.path.isfile(name+'-neoWISE.ipac'):
+        
+        if verbose:
+            print ('reading:', name+'-neoWISE.ipac')
+        
+        astro_tab = astropy.io.ascii.read(name+'-neoWISE.ipac')
+
+        if not('w2flux' in astro_tab.dtype.names):
+            print ('old format, need to download again')
+            redo = True
+    else:
+        redo = True
+
+    if redo or not(name):
+        obs_str = '{0:0.6f}+{1:+0.6f}'.format(ra, dec)
+
+        url = url_to_fill.format(obs_str)
+        if verbose:
+            print ('getting neoWISE data from:')
+            print(url)
+
+        try:
+            r = requests.get(url, timeout=120)
+
+            content=str(r.content)
+
+            urlindex=content.find('/workspace/')
+            urlindex2=content.find('.tbl')
+
+            table=requests.get('https://irsa.ipac.caltech.edu'+content[urlindex:urlindex2]+'.tbl')
+
+        except Exception as e:
+            print ('plot_neoWISE: no connection to IRSA; url was:\n', url)
+            print (e)
+            return [], None
+
+        astro_tab = astropy.io.ascii.read(table.text)
+
+        # save the data
+        if name:
+            with open(name+'-neoWISE.ipac', 'w') as the_file:
+                the_file.write(table.text)
+
+    
+    dd = np.array(astro_tab)
+
+    if len(dd)==0:
+        return ["neoWISE: no match"], None
+
+
+    # apply some quality cuts
+    iqual = (dd['saa_sep']>5) * (dd['qual_frame']>0) * (dd['cc_flags']=='0000')
+    if verbose:
+        print ('# neoWISE observations', len(dd))
+        print ('# data point removed by quality cuts', sum(iqual==False))
+    
+    if sum(iqual)<3:
+        if verbose:
+            print ('no enough good data:', astro_tab[('qual_frame', 'saa_sep', 'cc_flags','w1mpro', 'w1sigmpro')])
+        return ["neoWISE: not enough detections (N={0})".format(sum(iqual))], None
+
+    dd = dd[iqual]
+
+    xx = dd['mjd']-t0
+
+
+    # attempt to make smart bins that are catch the entire 
+    roundtime = np.unique(np.round(xx, decimals=-2)) # bins in 100 days
+    neartime = [ xx[np.argmin(np.abs(xx-rt))] for rt in roundtime ] # catch nearest data
+    bins = [] # find the edges of the bins
+    for nt in neartime:
+        ii = abs(xx-nt)<30
+        if sum(ii): 
+            nb = [min(xx[ii])-0.1, max(xx[ii])+0.1] # some padding
+            # avoid duplicates
+            if not nb in bins: 
+                bins.append(nb)
+    
+    bins = np.array(bins).flatten()
+
+    # compute: W1
+    ii1 = (dd['w1sigmpro']>0) 
+
+    print ('# W1 (significant) detections: ({0}) {1}'.format(sum(ii1), sum(dd['w1sigflux']>0)))
+    xbin1, ybin1 = sjoert.simstat.binthem(xx[ii1], dd['w1mpro'][ii1],dd['w1sigmpro'][ii1], use_wmean=True,std=True, sqrtN=True, bins=bins, silent=True) 
+    inz1 = ybin1[0,:]>0 
+
+    if sum(ii1):
+        w1_med = np.median(dd['w1mpro'][ii1])
+        w1_N = sum(ybin1[3,:])
+        #w1_chi2 = sum((dd['w1mpro'][ii1]-w1_med)**2 / dd['w1sigmpro'][ii1]**2) / sum(ii1)  # use all data with reported uncertainty
+        inz1_chi=ybin1[3,:]>2 # need enough detection to compute scatter
+        w1_chi2 = sum((ybin1[0,inz1_chi]-w1_med)**2 / ybin1[1,inz1_chi]**2) / sum(inz1_chi)          # use uncertainty estimated from scatter in each bin
+    else:
+        w1_N, w1_med, w1_chi2=0, np.nan, np.nan
+
+
+    # plot and compute: W2
+    
+    ii2_mag = (dd['w2sigmpro']>0)   # significant detections
+    ii2 = dd['w2sigflux']>0         # all detections
+    print ('# W2 (significant) detections: ({0}) {1}'.format(sum(ii2_mag), sum(ii2)))
+    if sum(ii2) and sum(ii2_mag):
+
+        zp2 = np.median(dd['w2mpro'][ii2_mag]+2.5*np.log10(dd['w2flux'][ii2_mag]))
+        if verbose:
+            print ('mean zeropoint W2:', zp2)
+
+        xbin2, ybin2 = sjoert.simstat.binthem(xx[ii2], dd['w2flux'][ii2],dd['w2sigflux'][ii2], use_wmean=True,std=True, sqrtN=True, bins=bins, silent=True)
+        
+        inz2 = ybin2[0,:]>0 # note, this removed epoch where the mean flux is negative 
+
+        # convert mean flux to mag
+        w2binflux = ybin2[0,:].copy()
+        ybin2[0,:]= -2.5*np.log10(w2binflux)+zp2 
+        ybin2[1,:] = 2.5/np.log(10) * ybin2[1,:]/w2binflux
+
+        w2_med = -2.5*np.log10(sjoert.simstat.wmean(dd['w2flux'][ii2],dd['w2sigflux'][ii2]))+zp2 # convert to mag
+        w2_N = sum(ybin2[3,:])
+        
+        #w2_chi2 = sum((dd['w2mpro'][ii2]-w2_med)**2 / dd['w2sigmpro'][ii2]**2) / sum(ii2) # use all data with reported uncertainty
+        inz2_chi=ybin2[3,:]>2 # need enough detection to compute scatter
+        w2_chi2 = sum((ybin2[0,inz2_chi]-w2_med)**2 / ybin2[1,inz2_chi]**2) / sum(inz2_chi)         # use uncertainty estimated from scatter in each bin
+    else:
+        w2_N, w2_med, w2_chi2  =0, np.nan, np.nan
+
+    # compute W1-W2 in each bin
+    w1minw2 = []
+    if (sum(ii1)>10) and (sum(ii2)>10) and (sum(ii2_mag)>5):        
+        for x in xbin2[inz2]:
+            # check that we have data in the same bins
+            i1_near = abs(xbin1[inz1]-x)<20
+            i2_near = abs(xbin2[inz2]-x)<20
+            n1_near = sum(ybin1[3,:][inz1][i1_near])
+            n2_near = sum(ybin2[3,:][inz2][i2_near])
+            if (n1_near>2) and (n2_near>2):
+                w1_near = np.mean(ybin1[0,:][inz1][i1_near])
+                w2_near = np.mean(ybin2[0,:][inz2][i2_near])
+                w1minw2.append(w1_near-w2_near)
+                if verbose:
+                    print ('N(W1)={0:3.0f} N(W2)={1:3.0f} <W1>={2:0.2f} <W2>={3:0.3f} <W1>-<W2>={4:5.3f}'.format(n1_near,n2_near,w1_near,w2_near, w1minw2[-1]))
+
+    # do classification
+    wise_class = None
+
+    # and make a nice string that we can return
+    if w2_N==0 and w1_N==0:
+        wise_info = "neoWISE: no match"
+    else:
+        wise_info = "neoWISE: N(w1)={0:0.0f}; N(w2)={1:0.0f}".format(w1_N, w2_N)
+
+    if w1_N>0:
+        wise_info += '; <w1>={0:0.2f}'.format(w1_med)
+    if w2_N>0:
+        wise_info += '; <w2>={0:0.2f}'.format(w2_med)
+
+    if not np.isnan(np.median(w1minw2)):
+        wise_info += '; <w1-w2>={0:0.2f}'.format(np.median(w1minw2))
+
+    if not np.isnan(w1_chi2):
+        wise_info += '; chi2(w1)={0:0.1f}'.format(w1_chi2)
+
+    if not np.isnan(w2_chi2):
+        wise_info += '; chi2(w2)={0:0.1f}'.format(w2_chi2)
+ 
+    # we want at least 10 W2 detections over 3 epochs
+    if w2_N>10:
+        if sum(ybin2[3,inz2])>10 and (len(xbin2[inz2])>3) :
+            
+            # Stern12
+            # if (w2_med<15) and (np.median(w1minw2)>0.8): 
+            #   wise_class = 'AGN'
+            
+            # Assaf+13
+            if np.median(w1minw2)>0.662*np.exp(0.232*(np.clip(w2_med-13.97,0,1e99))**2):
+                wise_class = 'AGN'
+                wise_info+='; AGN classification based on color (Assef+12)'
+
+        # significant variability
+        if w1_chi2>10:
+            wise_class = 'AGN'
+            wise_info+='; significant variability'
+        # evidence for variability
+        elif w1_chi2>5:
+            wise_class = 'AGN?'
+            wise_info+='; some evidence for variability'
+
+    info_list = [wise_info]
+
+    # also add allWISE info
+    if max(dd['w2mpro_allwise']) and max(dd['w1mpro_allwise']):
+        w1w2_allwise = max(dd['w1mpro_allwise'])-max(dd['w2mpro_allwise'])
+        w1w2_allwise_err = np.sqrt(max(dd['w1sigmpro_allwise'])**2+max(dd['w2sigmpro_allwise'])**2)
+        all_info = 'allWISE: w1-w2={0:0.2f}+/-{1:0.2f}'.format(w1w2_allwise,w1w2_allwise_err)
+
+        if np.median(w1w2_allwise)>0.662*np.exp(0.232*(np.clip(dd[0]['w2mpro_allwise']-13.97,0,1e99))**2):
+            wise_class = 'AGN'
+            all_info+='; AGN classification based on color (Assef+12)'
+
+        info_list += [all_info]
+    
+
+
+    if verbose:
+        print ('allWISE: median(w1)-median(w2) = {0:0.3f}'.format(w1_med-w2_med))
+        [print(x) for x in info_list]
+        print ('neoWISE classification:', wise_class)
+
+
+    # make a plot
+    if not os.path.isfile(name+'-neoWISE.pdf') or redo or wait:
+
+        plt.close()
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        
+        if w1_N:
+            line = ax.errorbar(xx[ii1], dd['w1mpro'][ii1],dd['w1sigmpro'][ii1], fmt='s', alpha=0.5,label='W1')
+            ax.plot(xbin1[inz1], ybin1[0,inz1],'d--', color=line[0].get_color())
+            ax.fill_between(xbin1[inz1], ybin1[0,inz1]+ybin1[1,inz1], ybin1[0,inz1]-ybin1[1,inz1], color=line[0].get_color(), alpha=0.5)
+            # if dd[0]['w1mpro_allwise']:
+            #   ax.plot(xx, np.repeat(dd[0]['w1mpro_allwise'], len(xx)), ':', lw=2, color=line[0].get_color(), alpha=0.6)
+        
+            if max(dd['w1mpro_allwise']):
+                xw = (min(xbin1[inz1])-10, max(xbin1[inz1]))
+                plt.plot(xw, np.repeat(max(dd['w1mpro_allwise']), 2), 
+                    ':',lw=1,alpha=0.8, color=line[0].get_color())
+
+        if w2_N:
+            line = ax.errorbar(xx[ii2], dd['w2mpro'][ii2],dd['w2sigmpro'][ii2], fmt='o', alpha=0.5,label='W2')
+            ax.plot(xbin2[inz2], ybin2[0,inz2],'d--', color=line[0].get_color())
+            ax.fill_between(xbin2[inz2], ybin2[0,inz2]+ybin2[1,inz2], ybin2[0,inz2]-ybin2[1,inz2], color=line[0].get_color(), alpha=0.5)
+            # if dd[0]['w2mpro_allwise']:
+            #   ax.plot(xx, np.repeat(dd[0]['w2mpro_allwise'], len(xx)), ':', lw=2, color=line[0].get_color(), alpha=0.6)
+
+            if max(dd['w2mpro_allwise']):
+                xw = (min(xbin2[inz2])-10, max(xbin1[inz2]))
+                plt.plot(xw, np.repeat(max(dd['w2mpro_allwise']), 2),
+                 ':', lw=1, alpha=0.8,color=line[0].get_color())
+
+
+
+        ax.set_ylim(ax.get_ylim()[::-1])
+        ax.set_xlabel('MJD - {0:0.0f}'.format(t0))
+        ax.set_ylabel('mag (Vega)')
+        ax.set_title("N(w1)={0:0.0f}; N(w2)={1:0.0f}; chi2(w1)={2:0.1f}; chi2(w2)={3:0.1f} <w1-w2>={4:0.2f}".format(
+                                w1_N, w2_N, w1_chi2, w2_chi2, np.median(w1minw2)))
+        ax.legend()
+
+        if name:
+            ax.figure.savefig(name+'-neoWISE.pdf') 
+        if wait:
+            ax.figure.show()
+            key = input()
+
+    return info_list, wise_class
+
 
 
 def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False, fluxtype='kron'):
