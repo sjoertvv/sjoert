@@ -70,7 +70,8 @@ def Beq(S_peak, D_L, nu_p, alpha=1, f=0.5,  who='Chevalier'):
 def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1., 
 		fA=1, fV=1, f=1, 
 		p=3,
-		epsilon_e=1,
+		epsilon_e=None,
+		epsilon_B=1,
 		alpha=6/11,
 		verbose=False, who='Barniol'):
 	'''
@@ -89,8 +90,9 @@ def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1.,
 	f=1  		filling factor of Chevalier, such that Volume=4/3 *f pi*R**3
 
 	epsilon_e=None 	the fraction of the proton energy that goes into electrons 
-				 	this is used to estimate gamma_min, but only works when Gamma>few!
+				 	this is used to estimate gamma_min, but only works when Gamma>~few
 				 	gamma_min=2 is enforced by default
+	epsilon_B=None  the fraction of total energy that does into the magnetic field
 
 	return radius in cm
 	'''
@@ -104,6 +106,7 @@ def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1.,
 		else:
 			xhi_e = 2
 
+
 		out= 1e17 * \
 			(21.8 * (525)**(p-1))**(1/(13+2*p)) * \
 			(xhi_e**((2-p)/(13+2*p))) * \
@@ -115,13 +118,25 @@ def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1.,
 			(fV**(-1/(13+2*p))) * \
 			(Gamma_bulk**((p+8)/(13+2*p)))
 			
+		# increase by accounting for hot protons (section 4.2.2. of Barniol)
 		if epsilon_e:
 	
-			out*= (1+1/epsilon_e)**(1/(13+2*p)) # increase by accounting for hot protons
+			out*= (1+1/epsilon_e)**(1/(13+2*p)) 
 
 			if Gamma_bulk>1.1:
 				out*=((Gamma_bulk-1)**((2-p)/(13+2*p)))
 		
+		# do the correction for out-of-equiparition systems
+		if epsilon_B:
+			eta = (epsilon_B/ (1-epsilon_B)) / (6/11) # note this this different from Barniol because this account for possibility of hot protons
+		else:
+			eta = 1
+
+		if Gamma_bulk<1.1:
+			out *= eta**(1/17)
+		else:
+			out *= eta**(1/12)
+
 		# geomtrical correction for Newonian case
 		if Gamma_bulk<1.1:
 			out*=(4**(1/(13+2*p)))
@@ -148,9 +163,10 @@ def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1.,
 			(f/0.5)**(-1/19) * \
 			(1+z)**(-10/19) 
 
-def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=1, f=1, 
+def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=4/3, f=1, 
 		p=3,
-		epsilon_e=1,
+		epsilon_e=None,
+		epsilon_B=None,
 		alpha=6/11,
 		verbose=False, who='Barniol'):
 	'''
@@ -171,6 +187,9 @@ def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=1, f=1,
 	epsilon_e=None 	the fraction of the proton energy that goes into electrons 
 				 	this can also be used to estimate gamma_min, but only works when Gamma>few
 				 	gamma_min=2 is enforced by default
+	epsilon_B=None  the fraction of total energy carried by the magnetic field (if None we assume system in equipartition)
+
+
 
 	return energy in erg
 	'''
@@ -195,10 +214,22 @@ def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=1, f=1,
 			(fV**(2*(p+1)/(13+2*p))) * \
 			(Gamma_bulk**(-(5*p+16)/(13+2*p))) 
 
+		# increase by accounting for hot protons
 		if epsilon_e:
-			out*= (1+1/epsilon_e)**(11/(13+2*p)) # increase by accounting for hot protons
+			out*= (1+1/epsilon_e)**(11/(13+2*p)) 
 			if Gamma_bulk>1.1:
 				out*=((Gamma_bulk-1)**(-11*(p-2)/(13+2*p)))
+
+		# do the correction of radius for out-of-equiparition systems
+		if epsilon_B:
+			eta = (epsilon_B/ (1-epsilon_B)) / (6/11)
+		else:
+			eta = 1
+
+		if Gamma_bulk<1.1:
+			out *= (11/17)*eta**(-6/17) + (6/17) * eta**(11/17)
+		else:
+			out *= (11/17)*eta**(-5/12) + (6/17) * eta**(7/12)
 
 
 		# geomtrical correction for Newonian case
