@@ -92,7 +92,7 @@ def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1.,
 	epsilon_e=None 	the fraction of the proton energy that goes into electrons 
 				 	this is used to estimate gamma_min, but only works when Gamma>~few
 				 	gamma_min=2 is enforced by default
-	epsilon_B=None  the fraction of total energy that does into the magnetic field
+	epsilon_B=None  the fraction of total energy that goes into the magnetic field
 
 	return radius in cm
 	'''
