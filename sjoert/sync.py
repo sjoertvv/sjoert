@@ -71,7 +71,7 @@ def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1.,
 		fA=1, fV=1, f=1, 
 		p=3,
 		epsilon_e=None,
-		epsilon_B=1,
+		epsilon_B=None,
 		alpha=6/11,
 		verbose=False, who='Barniol'):
 	'''
@@ -176,7 +176,7 @@ def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=4/3, f=1,
 
 	S_peak in mJy
 	D_L = cm
-	nu_p in Hz (observed)
+	nu_p in GHz (observed)
 	Gamma_bulk=1 is the bulk Lorentz factor
 	
 	f=1  filling factor of Chevalier, such that Volume=4/3 *f pi*R**3
