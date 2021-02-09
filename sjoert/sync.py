@@ -68,14 +68,14 @@ def Beq(S_peak, D_L, nu_p, alpha=1, f=0.5,  who='Chevalier'):
 
 
 def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1., 
-		fA=1, fV=1, f=1, 
+		fA=1, fV=4/3, f=1, 
 		p=3,
 		epsilon_e=None,
 		epsilon_B=None,
 		alpha=6/11,
 		verbose=False, who='Barniol'):
 	'''
-	R_eq = Req(S_peak, D_L, nu_p, z, fA=1, fV=1)
+	R_eq = Req(S_peak, D_L, nu_p, z, fA=1, fV=4/3)
 
 	Barniol-Duran+13 Eq. 21
 
@@ -88,6 +88,9 @@ def Req(S_peak, D_L, nu_p, z, Gamma_bulk=1.,
 				note the paper seems to have the inverse below Eq. 10, but that must be wrong)
 	
 	f=1  		filling factor of Chevalier, such that Volume=4/3 *f pi*R**3
+	
+	fV=4/3
+	fA=1		the volume and area factors of Barniol-Duran (2013), fV=4/3 is the sperical Newtonian case
 
 	epsilon_e=None 	the fraction of the proton energy that goes into electrons 
 				 	this is used to estimate gamma_min, but only works when Gamma>~few
@@ -170,7 +173,7 @@ def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=4/3, f=1,
 		alpha=6/11,
 		verbose=False, who='Barniol'):
 	'''
-	E_eq = Req(S_peak, D_L, nu_p, z, fA=1, fV=1)
+	E_eq = Req(S_peak, D_L, nu_p, z, fA=1, fV=4/3)
 
 	Barniol-Duran+13 Eq. 25
 
@@ -180,6 +183,9 @@ def Eeq(S_peak, D_L, nu_p, z, Gamma_bulk=1.,fA=1, fV=4/3, f=1,
 	Gamma_bulk=1 is the bulk Lorentz factor
 	
 	f=1  filling factor of Chevalier, such that Volume=4/3 *f pi*R**3
+
+	fV=4/3
+	fA=1		the volume and area factors of Barniol-Duran (2013), fV=4/3 is the sperical Newtonian case
 
 	alpha=6/11 	eps_B /eps_e is "true equipartition" (only used in Chevalier for now, 
 				note the paper seems to have the inverse below Eq. 10, but that must be wrong)
