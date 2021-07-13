@@ -393,7 +393,7 @@ def flux2lum(S, z=None, cm=None, nu=None, band=None,
         print('please give nu= (in Hz) or band=[FUV, NUV, u,g,r,i,z]')
         return None
 
-    if band is not(None):  nu = get_nu(nu, band)
+    if band is not(None):  nu = get_nu(band)
     if cm is None: cm = lumdis(z, h=h, Om0=Om0)
 
     return 4*np.pi * cm**2 * S*1e-23 * nu
