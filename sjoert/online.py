@@ -307,12 +307,13 @@ def get_WISE(ra, dec, name='', t0=58119, wait=False, verbose=True, redo=False):
 
 
 
-def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False, fluxtype='kron'):
+def get_PS(ra, dec, name='', radius=1,
+            t0=58119, wait=False, verbose=False, redo=False, fluxtype='kron'):
     '''
     download and safe PS1 DR2 stack and detections 
     search radius is 1" 
 
-    >>> cats_dict, info_dict = get_PS(350.95256 -1.13618 name='TDE2') 
+    >>> cats_dict, info_dict = get_PS(350.95256, -1.13618, radius=1, name='TDE2') 
 
     output:
     - cats_dict: is a dict that contain the catalogs for 'stack' and 'detection'
@@ -320,6 +321,7 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False, fl
 
     input:
     - name: path for saving data and plot
+    - radius: match radius in arsec, default is 1"
     - t0: mjd, plot time relative to this; default is the year 2018 (58119)
     - redo=False: force download even if we have the data on disk
     - fluxtype=kron: can also be set to psf
@@ -330,7 +332,7 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False, fl
     flt_dict = {1:'g', 2:'r', 3:'i', 4:'z', 5:'y'}
 
     url_2fill = 'https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/' + \
-                '{0}.csv?flatten_response=false&raw=false&sort_by=distance&{1}&radius=0.0002778'
+                '{0}.csv?flatten_response=false&raw=false&sort_by=distance&{1}&radius={1:0.6f}'
 
     fluxtype = fluxtype.lower() # lets be helpful
 
@@ -360,7 +362,7 @@ def get_PS(ra, dec, name='', t0=58119, wait=False, verbose=False, redo=False, fl
         if redo or not(name):
             obs_str = 'ra={0:0.6f}&dec={1:+0.6f}'.format(ra, dec)
 
-            url = url_2fill.format(catname, obs_str)
+            url = url_2fill.format(catname, obs_str, radius/3600)
             if verbose:
                 print ('getting PS data from:')
                 print(url)
