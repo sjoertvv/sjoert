@@ -332,7 +332,7 @@ def get_PS(ra, dec, name='', radius=1,
     flt_dict = {1:'g', 2:'r', 3:'i', 4:'z', 5:'y'}
 
     url_2fill = 'https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/' + \
-                '{0}.csv?flatten_response=false&raw=false&sort_by=distance&{1}&radius={1:0.6f}'
+                '{0}.csv?flatten_response=false&raw=false&sort_by=distance&{1}&radius={2:0.6f}'
 
     fluxtype = fluxtype.lower() # lets be helpful
 
