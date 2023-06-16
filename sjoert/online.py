@@ -360,7 +360,7 @@ def get_PS(ra, dec, name='', radius=1,
             redo = True
 
         if redo or not(name):
-            obs_str = 'ra={0:0.6f}&dec={1:+0.6f}'.format(ra, dec)
+            obs_str = 'ra={0:0.6f}&dec={1:0.6f}'.format(ra, dec)
 
             url = url_2fill.format(catname, obs_str, radius/3600)
             if verbose:
