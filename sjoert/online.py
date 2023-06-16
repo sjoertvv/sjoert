@@ -62,7 +62,7 @@ def get_WISE(ra, dec, name='', t0=58119, wait=False, verbose=True, redo=False):
         redo = True
 
     if redo or not(name):
-        obs_str = '{0:0.6f}+{1:+0.6f}'.format(ra, dec)
+        obs_str = '{0:0.6f}+{1:0.6f}'.format(ra, dec)
 
         url = url_to_fill.format(obs_str)
         if verbose:
