@@ -6,7 +6,7 @@ the html pages are downloaded to NEDdir, by default
 this is sjoert.dirs.catdir+NED/
 
 2011 - Sjoert started
-2020 - adding neowise 
+2020 - adding neowise  
 '''
 from __future__ import print_function 
 
