@@ -5,7 +5,8 @@ you can get an SED, currently only via the source name
 the html pages are downloaded to NEDdir, by default
 this is sjoert.dirs.catdir+NED/
 
-2011 - Sjoert
+2011 - Sjoert started
+2020 - adding neowise 
 '''
 from __future__ import print_function 
 
