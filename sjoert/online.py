@@ -309,24 +309,29 @@ def get_WISE(ra, dec, name='', t0=58119, wait=False, verbose=True, redo=False):
 
 
 def get_PS(ra, dec, name='', radius=1,
-            t0=58119, wait=False, verbose=False, redo=False, fluxtype='kron'):
+            t0=58119, wait=False, verbose=False, redo=False, 
+            skip_detections=False, fluxtype='kron'):
     '''
-    download and safe PS1 DR2 stack and detections 
-    search radius is 1" 
+    download and safe PS1 DR2 stack (and detections) 
+    default search radius is 1" 
 
     >>> cats_dict, info_dict = get_PS(350.95256, -1.13618, radius=1, name='TDE2') 
 
     output:
     - cats_dict: is a dict that contain the catalogs for 'stack' and 'detection'
-    - info_dict: contains the chi2, median, etc. of the different filters
+    - info_dict: summary info on the detections table, contains the chi2, median, etc. of the different filters 
+
+    the summary info of the detections (and the plot) only makes sense if you have one source in the detections table
 
     input:
-    - name: path for saving data and plot
+    - name: path for saving data and plot detections
     - radius: match radius in arsec, default is 1"
+    - skip_detections=False: dont safe and plot the detection table
     - t0: mjd, plot time relative to this; default is the year 2018 (58119)
     - redo=False: force download even if we have the data on disk
     - fluxtype=kron: can also be set to psf
     - verbose=False: talk to me 
+    - wait=False: pause for interactive plots
 
     '''
 
@@ -347,7 +352,12 @@ def get_PS(ra, dec, name='', radius=1,
     # read/save different PS1 catalog
     astro_tab = {}
 
-    for catname in ['detection', 'stack']:
+    if skip_detections:
+        catnames = ['stack']
+    else:
+        catnames = ['detection', 'stack']
+
+    for catname in catnames:
 
         fname = name+'-PS_'+catname+'.csv'
         if name and os.path.isfile(fname):
@@ -397,11 +407,14 @@ def get_PS(ra, dec, name='', radius=1,
                     the_file.write(table)
 
     
+    if skip_detections:
+        return astro_tab, {}
+
     # short-hand
     dd = astro_tab['detection']
 
     if len(dd)==0:
-        return None, None
+        return astro_tab, {}
 
 
     # apply some quality cuts
@@ -416,8 +429,8 @@ def get_PS(ra, dec, name='', radius=1,
     
     if sum(iqual)<1:
         if verbose:
-            print ('no enough good data:', astro_tab)
-        return None, None
+            print ('no enough good data in detections:', astro_tab)
+        return astro_tab, None
 
     dd = dd[iqual]
 
@@ -431,8 +444,6 @@ def get_PS(ra, dec, name='', radius=1,
     med = {} # median
     smag = {} # from stack
     chi2 = {} # chi2/dof
-
-
 
     for i in [1,2,3,4,5]:
         
@@ -463,11 +474,7 @@ def get_PS(ra, dec, name='', radius=1,
             chi2[flt] = sum( (mag[flt]-med[flt])**2 / mag_err[flt]**2) / (sum(idx)-1)  # use all data with reported uncertainty
             #inz1_chi=ybin1[3,:]>2 # need enough detection to compute scatter
             #chi2[flt] = sum((ybin1[0,inz1_chi]-w1_med)**2 / ybin1[1,inz1_chi]**2) / sum(inz1_chi)          # use uncertainty estimated from scatter in each bin
-
-            # if verbose:
-            #     print ('Flux (all)      :',dd[dd['filterID']==i][fluxtype+'Flux'])
-            #     print ('Mag  (SNR>1)    :', mag[flt])
-        
+    
 
         else:
             N[flt], med[flt], chi2[flt]=0, np.nan, np.nan
@@ -489,11 +496,9 @@ def get_PS(ra, dec, name='', radius=1,
 
     if not np.isnan(chi2['r']):
         ps_info += '; chi2(r)={0:0.1f}'.format(chi2['r'])
- 
-    info_list = [ps_info]
 
 
-    # make a plot
+    # make a plot 
     if not os.path.isfile(name+'-PS_detections.pdf') or redo or wait:
 
         import matplotlib
@@ -532,111 +537,6 @@ def get_PS(ra, dec, name='', radius=1,
             key = input()
 
     return astro_tab, {'median':med, 'N':N, 'chi2':chi2, 'stack':smag}
-
-
-def ps1_cone_search(ra, dec, rad=1/60., do_chrome=False, go_headless=True,
-            return_rec=True, name='',
-            verbose=True,
-            chrome_binary_location = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            chrome_driver_binary = "/usr/local/bin/chromedriver",
-            phantomjs_driver_binary="/usr/local/bin/phantomjs"):
-    '''
-    UPDATE FROM 2019 -- BETTER TO IGNORE -- THIS HACK WAS ONLY USEFUL BEFORE PS DR2
-
-    >>> rec_arr = ps1_cone_seach(ra, dec, rad=1/60.)
-
-    ra, dec, rad in degree
-    
-    Use the cone search form at http://archive.stsci.edu/panstarrs
-    selenium is used to start a brower and click the search button
-
-    By default we return a np.recarray with all matches. But if return_rec=False, we return json
-
-    If using the Chrome driver, we need the path to Chrome itself (chrome_binary_location) and the driver (chrome_driver_binary) 
-    otherwise, we use the PhantomJS driven and need the phantomjs_driver_binary keyword
-
-    chrome driver binaries are kept here: http://chromedriver.storage.googleapis.com/index.html
-    '''
-
-    PS1_seach_url = 'http://archive.stsci.edu/panstarrs/search.php'
-    
-    from selenium import webdriver # https://stackoverflow.com/questions/18868743/how-to-install-selenium-webdriver-on-mac-os
-
-    cmd = {}
-
-    cmd["ra"] = str(ra)
-    cmd["dec"] = str(dec)
-    cmd["radius"] = str(rad*60)
-    cmd["outputformat"] = "JSON"
-
-    resp = requests.get(PS1_seach_url,cmd)
-
-    if do_chrome:
-        options = webdriver.ChromeOptions()
-        options.binary_location = chrome_binary_location
-        chrome_driver_binary = chrome_driver_binary
-        if go_headless:
-            options.add_argument('--headless') # breaks
-            options.add_argument("--window-size=1920x1080")
-        driver = webdriver.Chrome(chrome_driver_binary, chrome_options=options)
-    else:
-        # phantomjs-2.1.1-macosx, no longer supported however
-        driver = webdriver.PhantomJS(executable_path=phantomjs_driver_binary)
-
-
-    driver.get(resp.url)
-    driver.find_element_by_css_selector("[value='Search'").click()
-
-    heck_yeah =  driver.page_source
-
-    driver.close()
-
-    #soup = BeautifulSoup(heck_yeah,"lxml")
-
-    # join statement not realy needed because PS1 json is not nested (but you never know)
-    try:
-        jj = json.loads('['+"".join(heck_yeah.split(']')[0:-1]).split('[')[1]+']')
-    except Exception as e:
-        print (e)
-
-        print ('ps1_cone_seach: failed to get data for these coorindates:',ra, dec, ', with search radius {0:0.2} arcsec'.format(rad*60))
-        print ('url was \n', resp.url)
-        print ('output from driver:', heck_yeah)
-        return np.array([])
-
-    # conver hms/dms to deg
-    for i in range(len(jj)):
-        try:
-            c = SkyCoord(jj[i]['raMean'],jj[i]['decMean'],unit=(u.hourangle, u.deg)) 
-            jj[i]['raMean'],jj[i]['decMean'] = str((c.ra *u.deg).value), str((c.dec *u.deg).value)
-        except ValueError:
-            jj[i]['raMean'],jj[i]['decMean']= '-999', '-999'
-        try:
-            c = SkyCoord(jj[i]['raStack'],jj[i]['decStack'],unit=(u.hourangle, u.deg)) 
-            jj[i]['raStack'],jj[i]['decStack'] = str((c.ra *u.deg).value), str((c.dec *u.deg).value)
-        except ValueError:
-            jj[i]['raStack'],jj[i]['decStack'] = '-999', '-999'
-
-        #print  (jj[i]['ra'],jj[i]['dec'] )
-
-    # the PS1 search page doesnt allow fits output, but that wont stop us
-    if return_rec:
-        out = json2rec(jj, verbose=False, silent=True) 
-    else:
-        out = jj
-
-    if '.' in name:
-        if (name.split('.')[-1]=='fits') and return_rec: 
-            print('writing to ', name)
-            pyfits.writeto(name, out, clobber=True)
-        elif (name.split('.')[-1]=='json') and not return_rec:
-            print('writing to ', name)
-            open(name,'w').writelines((json.dumps(out, indent=3)))
-        else:
-            print('ps1_cone_seach: output file type not recognized (we only accept .json, or .fits)')
-            print (name)
-
-    return out
 
 
 
